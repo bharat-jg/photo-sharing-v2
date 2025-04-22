@@ -41,48 +41,44 @@ const Feed = () => {
           <div key={photo.id} className="break-inside-avoid mb-4 bg-white rounded-xl shadow">
             
             {/* Image */}
-            <div onClick={() => setSelectedPhoto(photo)} className="relative cursor-pointer">
-              <img
-                src={photo.image.replace(/^image\/upload\//, '')}
-                alt="Uploaded"
-                className="w-full object-cover transition-transform duration-300 hover:scale-105 rounded-lg"
-              />
+            <div
+  onClick={() => setSelectedPhoto(photo)}
+  className="relative group cursor-pointer"
+>
+  <img
+    src={photo.image.replace(/^image\/upload\//, '')}
+    alt="Uploaded"
+    className="w-full object-cover transition-transform duration-300 hover:scale-105 rounded-lg"
+  />
 
-              {/* Like animation - only on like */}
-              <AnimatePresence>
-                {likedPhotoIds.includes(photo.id) && photo.liked && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                    transition={{ duration: 0.5 }}
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                  >
-                    <div className="text-red-500 text-6xl">❤️</div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+  {/* Like Count on Hover */}
+  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <div className="flex items-center gap-1 bg-white/80 text-red-600 text-sm px-2 py-1 rounded-full shadow">
+      ❤️ {photo.likes_count}
+    </div>
+  </div>
+
+  {/* Like animation */}
+  <AnimatePresence>
+    {likedPhotoIds.includes(photo.id) && photo.liked && (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.5 }}
+        transition={{ duration: 0.5 }}
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+      >
+        <div className="text-red-500 text-6xl">❤️</div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
+
+
+
             </div>
 
-            {/* Like Button */}
-            <div className="px-3 py-2">
-              <LikeButton
-                photoId={photo.id}
-                liked={photo.liked}
-                likesCount={photo.likes_count}
-                onUpdate={(newLiked, newCount) => {
-                  setPhotos(prev =>
-                    prev.map(p =>
-                      p.id === photo.id
-                        ? { ...p, liked: newLiked, likes_count: newCount }
-                        : p
-                    )
-                  )
-                  if (newLiked) handleLikeAnimation(photo.id)
-                }}
-              />
-            </div>
-          </div>
+            
         ))}
       </div>
 

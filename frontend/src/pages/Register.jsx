@@ -33,7 +33,7 @@ const Register = () => {
   
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-pink-50 to-pink-100 px-4">
+    <div className="flex items-center justify-center bg-gradient-to-br min-h-screen bg-[linear-gradient(135deg,_#00C9FF,_#7F00FF,_#E100FF)]">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md transition-transform transform hover:scale-[1.02]">
         <h2 className="text-3xl font-extrabold text-pink-600 mb-6 text-center tracking-tight">
           Join Us on PinClone 📌

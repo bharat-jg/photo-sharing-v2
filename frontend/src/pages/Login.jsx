@@ -8,7 +8,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
+  const handleChange = (e) => {   
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -25,7 +25,7 @@ const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-pink-100 via-white to-pink-100">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r  bg-[linear-gradient(135deg,_#00C9FF,_#7F00FF,_#E100FF)] ">
       <motion.div
         className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md"
         initial={{ y: 50, opacity: 0 }}
