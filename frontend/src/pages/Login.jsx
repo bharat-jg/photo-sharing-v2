@@ -3,6 +3,8 @@ import axios from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
+import { Link } from 'react-router-dom';
+
 const Login = () => {
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
@@ -32,7 +34,7 @@ const Login = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <h2 className="text-3xl font-extrabold text-center text-pink-600 mb-6">Welcome Back 👋</h2>
+        <h2 className="text-3xl font-extrabold text-center text-pink-600 mb-6">Welcome 👋</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="username" className="block text-sm font-semibold text-gray-700">
@@ -59,6 +61,13 @@ const Login = () => {
               required
               className="w-full mt-1 px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
             />
+            </div>
+            <div className="text-right text-sm">
+            <Link to="/forgot-password" className="text-pink-500 hover:text-pink-600 font-medium">
+              Forgot Password?
+            </Link>
+     
+          
           </div>
           {error && (
             <p className="text-sm text-red-500 font-medium text-center -mt-2">{error}</p>
@@ -71,8 +80,17 @@ const Login = () => {
           >
             Sign In
           </motion.button>
-        </form>
+        </form> <div className="mt-4 text-center">
+  <p className="text-sm text-gray-600">
+  Don't have an account?{' '}
+   
+    <Link to="/register" className="text-pink-600 hover:text-pink-700 font-semibold">
+      Sign Up here
+    </Link>
+  </p>
+</div>
       </motion.div>
+       
     </div>
   );
 };

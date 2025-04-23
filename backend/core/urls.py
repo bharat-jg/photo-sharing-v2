@@ -18,5 +18,6 @@ urlpatterns = [
         "photos/<int:photo_id>/like-toggle/",
         LikeToggleView.as_view(),
         name="like-toggle",
-    ),
+    ), 
+  
 ]

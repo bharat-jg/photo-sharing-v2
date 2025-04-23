@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import axios from '../api/axios';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+
 
 
 const Register = () => {
@@ -33,9 +35,9 @@ const Register = () => {
   
 
   return (
-    <div className="flex items-center justify-center bg-gradient-to-br min-h-screen bg-[linear-gradient(135deg,_#00C9FF,_#7F00FF,_#E100FF)]">
+    <div className="flex items-center justify-center bg-gradient-to-br min-h-screen bg-[linear-gradient(100deg,_#00C9FF,_#6495ed,_#E100FF,_#E100FF)]">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md transition-transform transform hover:scale-[1.02]">
-        <h2 className="text-3xl font-extrabold text-pink-600 mb-6 text-center tracking-tight">
+        <h2 className="text-3xl font-extrabold text-black-600 mb-6 text-center tracking-tight">
           Join Us on PinClone 📌
         </h2>
 
@@ -58,7 +60,7 @@ const Register = () => {
     type="password"
     placeholder="••••••••"
     onChange={handleChange}
-    className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-300 transition-all"
+    className="w-full mt-1 px-4 py-2 border border-gray-300  rounded-lg shadow-sm placeholder:opacity-50 focus:outline-none focus:ring-2 focus:ring-pink-300 transition-all"
     required
   />
   {form.password && !/^(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.password) && (
@@ -71,14 +73,26 @@ const Register = () => {
 
           <button
             type="submit"
-            className="w-full bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 rounded-xl shadow transition-all duration-200"
+            className="w-full bg-[linear-gradient(100deg,_#00C9FF,_#6495ed,_#E100FF,_#E100FF)] hover:bg-pink-600 text-white font-semibold py-2 rounded-xl shadow transition-all duration-200"
             style={{ backgroundColor: '#ec4899', color: 'white' }}
           >
             Sign Up
           </button>
 
-          {error && <p className="text-sm text-red-500 text-center mt-2">{error}</p>}
+          {error && <p className="text-sm text-red-500 text-center mt-2">{error}</p>}<div className="mt-4 text-center">
+ 
+</div>
+
         </form>
+        <div className="mt-4 text-center">
+  <p className="text-sm text-gray-600">
+    Already have an account?{' '}
+   
+    <Link to="/login" className="text-pink-600 hover:text-pink-700 font-semibold">
+      Sign In here
+    </Link>
+  </p>
+</div>
       </div>
     </div>
   );

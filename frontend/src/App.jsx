@@ -5,7 +5,7 @@ import Feed from './pages/Feed'
 import { isAuthenticated } from './utils/auth'
 import UploadPhoto from './pages/UploadPhoto'
 import './index.css';
-
+import ForgotPassword from './pages/ForgotPassword'; 
 
 function App() {
 
@@ -15,6 +15,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/upload" element={<><UploadPhoto /></>} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
     </Routes>
   )
 }

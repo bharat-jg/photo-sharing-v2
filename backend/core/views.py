@@ -71,3 +71,4 @@ class LikeToggleView(APIView):
             like.delete()
             return Response({"status": "unliked"})
         return Response({"status": "liked"})
+
