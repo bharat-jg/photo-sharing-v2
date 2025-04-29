@@ -11,12 +11,11 @@ djangorestframework_simplejwt==5.5.0
 filelock==3.18.0
 idna==3.10
 mysqlclient==2.2.7
+pillow==11.2.1
 platformdirs==4.3.7
 PyJWT==2.9.0
 python-dotenv==1.1.0
 requests==2.32.3
-
-
 six==1.17.0
 sqlparse==0.5.3
 tzdata==2025.2
