@@ -20,83 +20,8 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/SideBar';
 import axios from 'axios';
-
-// Mock data for a single photo post
-const mockPost = {
-  id: 1,
-  url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_oxsGZfkSE6T2lirH80SKKy9vkD780XxqFuQn5YYa3A&s&ec=72940544',
-  title: 'Golden Hour in the Mountains',
-  description:
-    'Captured this beautiful moment during sunset hike. The light was absolutely magical and created these stunning golden tones across the landscape.',
-  user: {
-    username: 'nature_explorer',
-    displayName: 'Alex Thompson',
-    avatar: '/api/placeholder/50/50',
-  },
-  stats: {
-    likes: 1243,
-    comments: 87,
-    saves: 324,
-    views: 15782,
-  },
-  createdAt: '2025-04-20T14:35:00Z',
-};
-
-// Mock comments data
-const mockComments = [
-  {
-    id: 1,
-    user: {
-      username: 'photo_enthusiast',
-      displayName: 'Jamie Wilson',
-      avatar: '/api/placeholder/50/50',
-    },
-    content:
-      'This is absolutely breathtaking! The colors are so vibrant. What post-processing software did you use?',
-    createdAt: '2025-04-20T15:12:00Z',
-    likes: 24,
-    replies: [],
-  },
-  {
-    id: 2,
-    user: {
-      username: 'mountain_climber',
-      displayName: 'Chris Parker',
-      avatar: '/api/placeholder/50/50',
-    },
-    content:
-      'I recognize this spot! Was just there last month. The light is so special during this time of year.',
-    createdAt: '2025-04-20T16:45:00Z',
-    likes: 18,
-    replies: [
-      {
-        id: 21,
-        user: {
-          username: 'nature_explorer',
-          displayName: 'Alex Thompson',
-          avatar: '/api/placeholder/50/50',
-        },
-        content:
-          'Yes! Late April is perfect for the golden light here. Glad you recognized it!',
-        createdAt: '2025-04-20T17:10:00Z',
-        likes: 8,
-      },
-    ],
-  },
-  {
-    id: 3,
-    user: {
-      username: 'camera_geek',
-      displayName: 'Taylor Reed',
-      avatar: '/api/placeholder/50/50',
-    },
-    content:
-      'The dynamic range on the new Sony sensors is incredible. You captured so much detail in both the shadows and highlights.',
-    createdAt: '2025-04-21T09:25:00Z',
-    likes: 32,
-    replies: [],
-  },
-];
+import { jwtDecode } from 'jwt-decode';
+import { getCurrentUserId } from '../utils/auth'; // Adjust the import path as necessary
 
 // Format relative time
 const formatRelativeTime = (dateString) => {
@@ -171,14 +96,35 @@ export const SearchBar = () => {
 // Sidebar component (reused from previous pages)
 
 // Comment component
-const Comment = ({ comment, isReply = false }) => {
+const Comment = ({ comment, comments, setComments, postUserId }) => {
   const [isLiked, setIsLiked] = useState(false);
-  const [showReplies, setShowReplies] = useState(true);
-  const [replyText, setReplyText] = useState('');
-  const [isReplying, setIsReplying] = useState(false);
+
+  const currentUserId = getCurrentUserId();
+
+  const handleDeleteComment = async (commentId) => {
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this comment?'
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`http://localhost:8000/api/comments/${commentId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Remove the deleted comment from the list of comments
+      setComments(comments.filter((comment) => comment.id !== commentId));
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      alert('Failed to delete comment.');
+    }
+  };
 
   return (
-    <div className={`${isReply ? 'ml-12 mt-3' : 'mb-6'}`}>
+    <div className="mb-6">
       <div className="flex">
         <img
           src="https://cdn-icons-png.freepik.com/256/6994/6994705.png?ga=GA1.1.1704611719.1745213202&semt=ais_hybrid"
@@ -197,61 +143,20 @@ const Comment = ({ comment, isReply = false }) => {
                 </span>
               </div>
               <span className="text-xs text-gray-500">
-                {formatRelativeTime(comment.createdAt)}
+                {formatRelativeTime(comment.created_at)}
               </span>
             </div>
             <p className="text-gray-800">{comment.text}</p>
-          </div>
-
-          {isReplying && (
-            <div className="mt-3 flex">
-              <div className="w-8 h-8 rounded-full bg-gray-200 mr-3"></div>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  placeholder="Write a reply..."
-                  className="w-full px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                />
-                <div className="flex justify-end mt-2">
-                  <button
-                    className="text-gray-500 mr-2"
-                    onClick={() => setIsReplying(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="bg-blue-600 text-white px-3 py-1 rounded-full"
-                    disabled={!replyText.trim()}
-                  >
-                    Reply
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {!isReply && comment.replies && comment.replies.length > 0 && (
-            <div className="mt-2">
+            {(comment.user.id === currentUserId.user_id ||
+              postUserId === currentUserId.user_id) && (
               <button
-                className="text-blue-600 text-sm flex items-center"
-                onClick={() => setShowReplies(!showReplies)}
+                onClick={() => handleDeleteComment(comment.id)}
+                className="text-red-500 text-xs mt-2"
               >
-                {showReplies
-                  ? 'Hide replies'
-                  : `Show ${comment.replies.length} replies`}
+                Delete
               </button>
-
-              {showReplies && (
-                <div className="mt-2">
-                  {comment.replies.map((reply) => (
-                    <Comment key={reply.id} comment={reply} isReply={true} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -259,9 +164,8 @@ const Comment = ({ comment, isReply = false }) => {
 };
 
 // Full Image Modal component
-const FullImageModal = ({ isOpen, onClose, imageUrl, imageTitle }) => {
+const FullImageModal = ({ isOpen, onClose, imageUrl, imageCaption }) => {
   const modalRef = useRef(null);
-  console.log(imageUrl);
 
   useEffect(() => {
     if (isOpen) {
@@ -279,9 +183,10 @@ const FullImageModal = ({ isOpen, onClose, imageUrl, imageTitle }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
+      {/* Modal Overlay */}
       <div
         ref={modalRef}
-        className="relative w-full h-full flex flex-col items-center justify-center"
+        className="pt-10 absolute inset-0 flex justify-center"
         onClick={(e) => {
           if (e.target === modalRef.current) onClose();
         }}
@@ -289,27 +194,22 @@ const FullImageModal = ({ isOpen, onClose, imageUrl, imageTitle }) => {
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors cursor-pointer"
         >
           <X size={24} />
         </button>
 
-        {/* Image */}
-        <div className="max-w-screen-xl max-h-screen p-4">
+        {/* Image container */}
+        <div className="max-w-[95vw] max-h-[90vh] overflow-hidden p-2">
           <img
             src={
               imageUrl.startsWith('https://')
                 ? imageUrl
                 : `https://${imageUrl.split('https://')[1]}`
             }
-            alt={imageTitle}
-            className="max-w-full max-h-[90vh] object-contain"
+            alt={imageCaption}
+            className="w-full h-full object-contain rounded-lg shadow-lg"
           />
-        </div>
-
-        {/* Caption */}
-        <div className="absolute bottom-4 left-0 right-0 text-center text-white">
-          <h3 className="text-xl font-medium">{imageTitle}</h3>
         </div>
       </div>
     </div>
@@ -321,19 +221,8 @@ const ShareModal = ({ isOpen, onClose, post }) => {
   const modalRef = useRef(null);
   const [copied, setCopied] = useState(false);
 
-  //   const shareOptions = [
-  //     { name: 'Copy Link', icon: <Link size={20} /> },
-  //     { name: 'Facebook', icon: '📘' },
-  //     { name: 'Twitter', icon: '🐦' },
-  //     { name: 'Instagram', icon: '📷' },
-  //     { name: 'Pinterest', icon: '📌' },
-  //     { name: 'Email', icon: '✉️' },
-  //   ];
-
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(
-      `https://photoshare.example.com/post/${post.id}`
-    );
+    navigator.clipboard.writeText(`http://localhost:5173/photos/${post.id}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -362,19 +251,19 @@ const ShareModal = ({ isOpen, onClose, post }) => {
           <div className="flex items-center space-x-3 mb-4">
             <img
               src="https://cdn-icons-png.freepik.com/256/6994/6994705.png?ga=GA1.1.1704611719.1745213202&semt=ais_hybrid"
-              alt={post.title}
-              className="w-16 h-16 rounded-lg object-cover"
+              alt={post.caption}
+              className="w-8 h-8 rounded-lg object-cover"
             />
             <div>
-              <h4 className="font-medium">{post.title}</h4>
-              <p className="text-sm text-gray-500">by @{post.user.username}</p>
+              {/* <h4 className="font-medium">{post.user.username}</h4> */}
+              <p className="text-sm  text-gray-500">by @{post.user.username}</p>
             </div>
           </div>
 
           <div className="relative">
             <input
               type="text"
-              value={`https://photoshare.example.com/post/${post.id}`}
+              value={`http://localhost:5173/photos/${post.id}`}
               readOnly
               className="w-full pl-4 pr-20 py-2 bg-gray-100 rounded-lg focus:outline-none"
             />
@@ -395,6 +284,7 @@ const ShareModal = ({ isOpen, onClose, post }) => {
 
 // Main Post Page component
 const PhotoDetail = () => {
+  const [isOwner, setIsOwner] = useState(false); // Ensured this is top-level hook
   const { id } = useParams(); // Get photo ID from URL params
   const navigate = useNavigate();
 
@@ -407,13 +297,16 @@ const PhotoDetail = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [newCaption, setNewCaption] = useState('');
+  const textareaRef = useRef(null);
 
+  // Fetch post and comments data
   useEffect(() => {
     const fetchPost = async () => {
       try {
         const res = await axios.get(`http://localhost:8000/api/photos/${id}/`);
         setPost(res.data);
-        console.log(res.data);
         setComments(res.data.comments || []);
       } catch (err) {
         console.error('Failed to fetch post', err);
@@ -424,6 +317,24 @@ const PhotoDetail = () => {
 
     fetchPost();
   }, [id]);
+
+  // Check if the current user is the owner of the post
+  useEffect(() => {
+    if (post) {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          const userId = decoded.user_id || decoded.id; // Adjust based on your JWT payload
+          if (userId === post.user.id) {
+            setIsOwner(true);
+          }
+        } catch (err) {
+          console.error('Invalid token:', err);
+        }
+      }
+    }
+  }, [post]); // Depend on `post` to trigger whenever `post` changes
 
   if (loading)
     return <div className="pt-20 pl-16 md:pl-64 px-4">Loading...</div>;
@@ -458,6 +369,61 @@ const PhotoDetail = () => {
     }
   };
 
+  const handleEdit = () => {
+    setNewCaption(post.caption);
+    setIsEditing(true);
+  };
+
+  const handleDeletePost = async () => {
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this post?'
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`http://localhost:8000/api/photos/${post.id}/edit/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // After successful deletion, navigate to the homepage or other page
+      navigate('/'); // Or wherever you want the user to go
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post.');
+    }
+  };
+
+  const submitCaptionEdit = async () => {
+    const token = localStorage.getItem('access_token');
+    try {
+      const res = await axios.patch(
+        `http://localhost:8000/api/photos/${post.id}/edit/`,
+        { caption: newCaption },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setPost((prevPost) => ({
+        ...prevPost,
+        caption: res.data.caption,
+      }));
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Error updating caption:', err);
+      alert('Failed to update caption');
+    }
+  };
+
+  const handleCommentClick = () => {
+    textareaRef.current?.focus();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
@@ -485,10 +451,12 @@ const PhotoDetail = () => {
                         : `https://${post.image.split('https://')[1]}`
                     }
                     alt={post.caption}
-                    className="w-full h-full object-cover cursor-pointer"
-                    onClick={() => setIsModalOpen(true)}
+                    className="w-full h-full object-contain"
                   />
-                  <button className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors">
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors cursor-pointer"
+                  >
                     <span className="sr-only">View full size</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -527,12 +495,54 @@ const PhotoDetail = () => {
                   </div>
                 </div>
 
-                <div className="p-4 border-b border-gray-100">
-                  <h2 className="text-xl font-bold mb-2">{post.caption}</h2>
-                  <p className="text-gray-700 mb-4">{post.caption}</p>
+                <div className="px-4 border-b border-gray-100">
+                  {isEditing ? (
+                    <div className="my-4">
+                      <textarea
+                        value={newCaption}
+                        onChange={(e) => setNewCaption(e.target.value)}
+                        className="w-full min-h-20 max-h-50 p-2 border rounded"
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={submitCaptionEdit}
+                          className="px-3 py-1 h-7 bg-blue-500 text-white rounded text-sm"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setIsEditing(false)}
+                          className="px-3 py-1 h-7 bg-gray-300 rounded text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-lg font-medium my-2">{post.caption}</p>
+                  )}
                   <div className="text-sm text-gray-500 mb-2">
                     {/* Format created_at based on your desired format */}
-                    <div>{new Date(post.created_at).toLocaleString()}</div>
+                    {formatRelativeTime(
+                      new Date(post.created_at).toLocaleString()
+                    )}
+
+                    {isOwner && (
+                      <div className="actions">
+                        <button
+                          onClick={handleEdit}
+                          className="btn btn-edit text-blue-500 text-xs mt-2"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={handleDeletePost}
+                          className="btn btn-delete text-red-500 text-xs mt-2 ml-3"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -547,17 +557,21 @@ const PhotoDetail = () => {
                       >
                         <Heart
                           size={20}
-                          className={isLiked ? 'fill-red-500' : ''}
+                          className={
+                            isLiked
+                              ? 'fill-red-500 cursor-pointer'
+                              : 'cursor-pointer'
+                          }
                         />
                       </button>
                       <button
-                        className="flex items-center text-gray-700 focus:outline-none"
-                        onClick={() => setShowComments(!showComments)}
+                        className="flex items-center text-gray-700 focus:outline-none cursor-pointer"
+                        onClick={handleCommentClick}
                       >
                         <MessageCircle size={20} />
                       </button>
                       <button
-                        className="flex items-center text-gray-700 focus:outline-none"
+                        className="flex items-center text-gray-700 focus:outline-none cursor-pointer"
                         onClick={() => setIsShareModalOpen(true)}
                       >
                         <Share2 size={20} />
@@ -571,7 +585,11 @@ const PhotoDetail = () => {
                     >
                       <Bookmark
                         size={20}
-                        className={isSaved ? 'fill-yellow-500' : ''}
+                        className={
+                          isSaved
+                            ? 'fill-yellow-500 cursor-pointer'
+                            : 'cursor-pointer'
+                        }
                       />
                     </button>
                   </div>
@@ -596,6 +614,7 @@ const PhotoDetail = () => {
                     <div className="w-8 h-8 rounded-full bg-gray-300 mr-3"></div>
                     <div className="flex-1">
                       <textarea
+                        ref={textareaRef}
                         placeholder="Add a comment..."
                         className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                         rows={2}
@@ -617,7 +636,14 @@ const PhotoDetail = () => {
 
                   <div>
                     {comments.map((comment) => (
-                      <Comment key={comment.id} comment={comment} />
+                      // <Comment key={comment.id} comment={comment} />
+                      <Comment
+                        key={comment.id}
+                        comments={comments}
+                        setComments={setComments}
+                        comment={comment}
+                        postUserId={post.user.id}
+                      />
                     ))}
                   </div>
                 </>
@@ -651,7 +677,6 @@ const PhotoDetail = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         imageUrl={post.image}
-        imageTitle={post.caption}
       />
 
       <ShareModal

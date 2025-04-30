@@ -1,74 +1,113 @@
-from django.shortcuts import render
-
-from rest_framework import generics, permissions, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework import status
 from django.contrib.auth.models import User
 from .models import Photo, Comment, Like
-from .serializers import (
-    UserSerializer,
-    PhotoSerializer,
-    CommentSerializer,
-    LikeSerializer,
-)
+from .serializers import UserSerializer, PhotoSerializer, CommentSerializer
+
+# Register user
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Register a user
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [permissions.AllowAny]
-
-
-# Photo feed and photo upload
-class PhotoListCreateView(generics.ListCreateAPIView):
-    queryset = Photo.objects.all().order_by("-created_at")
-    serializer_class = PhotoSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+# Photo feed & upload
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def photo_list_create(request):
+    if request.method == 'GET':
+        photos = Photo.objects.all().order_by('-created_at')
+        serializer = PhotoSerializer(photos, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = PhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Photo detail
-class PhotoDetailView(generics.RetrieveAPIView):
-    queryset = Photo.objects.all()
-    serializer_class = PhotoSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def photo_detail(request, pk):
+    try:
+        photo = Photo.objects.get(pk=pk)
+    except Photo.DoesNotExist:
+        return Response({"error": "Photo not found"}, status=404)
+    
+    serializer = PhotoSerializer(photo)
+    return Response(serializer.data)
+
+# Photo update & delete
+@api_view(['PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def photo_update_delete(request, pk):
+    try:
+        photo = Photo.objects.get(pk=pk)
+    except Photo.DoesNotExist:
+        return Response({"error": "Photo not found"}, status=404)
+
+    if photo.user != request.user:
+        return Response({"error": "You can only modify your own posts"}, status=403)
+
+    if request.method == 'PATCH':
+        serializer = PhotoSerializer(photo, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    elif request.method == 'DELETE':
+        photo.delete()
+        return Response(status=204)
+
+# Create comment
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def comment_create(request):
+    serializer = CommentSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(user=request.user)
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
 
 
-# Comment creation
-class CommentCreateView(generics.CreateAPIView):
-    serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# Delete comment
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def comment_delete(request, pk):
+    try:
+        comment = Comment.objects.get(pk=pk)
+    except Comment.DoesNotExist:
+        return Response({"error": "Comment not found"}, status=404)
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    # Check if the user is either the comment author or the post owner
+    if comment.user != request.user and comment.photo.user != request.user:
+        return Response({"error": "You can only delete your own comments or comments on your photos"}, status=403)
 
-
-# Comment deletion
-class CommentDeleteView(generics.DestroyAPIView):
-    queryset = Comment.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
-
-    def delete(self, request, *args, **kwargs):
-        comment = self.get_object()
-        if comment.user != request.user:
-            return Response(
-                {"error": "You can only delete your own comments"}, status=403
-            )
-        return super().delete(request, *args, **kwargs)
+    comment.delete()
+    return Response(status=204)
 
 
 # Like/Unlike toggle
-class LikeToggleView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, photo_id):
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def like_toggle(request, photo_id):
+    try:
         photo = Photo.objects.get(id=photo_id)
-        like, created = Like.objects.get_or_create(user=request.user, photo=photo)
-        if not created:
-            like.delete()
-            return Response({"status": "unliked"})
-        return Response({"status": "liked"})
-
+    except Photo.DoesNotExist:
+        return Response({"error": "Photo not found"}, status=404)
+    
+    like, created = Like.objects.get_or_create(user=request.user, photo=photo)
+    if not created:
+        like.delete()
+        return Response({"status": "unliked"})
+    return Response({"status": "liked"})
