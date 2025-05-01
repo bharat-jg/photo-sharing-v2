@@ -44,6 +44,7 @@ class PhotoSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)  # Show uploader info
     comments = CommentSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
+    likes = serializers.SerializerMethodField()
 
     class Meta:
         model = Photo
@@ -55,10 +56,11 @@ class PhotoSerializer(serializers.ModelSerializer):
             "created_at",
             "comments",
             "likes_count",
+            "likes",
         ]
 
     def get_likes_count(self, obj):
         return obj.likes.count()
 
-    # def get_image(self, obj):
-    #     return obj.image.url  # This returns full URL instead of just the path
+    def get_likes(self, obj):
+        return obj.likes.values_list('user_id', flat=True)

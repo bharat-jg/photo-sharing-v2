@@ -1,43 +1,41 @@
-import axios from '../api/axios'
-import { useState } from 'react'
+import { Heart } from 'lucide-react';
+import axios from 'axios';
 
-const LikeButton = ({ photoId, liked, likesCount, onUpdate }) => {
-  const [loading, setLoading] = useState(false)
+const LikeButton = ({ photoId, isLiked, likeCount, onLikeChange }) => {
+  const token = localStorage.getItem('access_token');
 
-const toggleLike = async () => {
-    setLoading(true)
+  const handleToggleLike = async () => {
     try {
-      const url = `/photos/${photoId}/like-toggle/`
-      const config = {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+      const response = await axios.post(
+        `http://localhost:8000/api/photos/${photoId}/like-toggle/`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
+
+      if (response.data.status === 'liked') {
+        onLikeChange(true);
+      } else {
+        onLikeChange(false);
       }
-  
-      await axios.post(url, {}, config)
-  
-      // Refetch updated photo data
-      const res = await axios.get(`/photos/${photoId}/`, config)
-      const updatedPhoto = res.data
-  
-      // Update parent state with the fresh data
-      onUpdate(updatedPhoto.liked, updatedPhoto.likes_count)
-    } catch (err) {
-      console.error('Like error:', err)
+    } catch (error) {
+      console.error('Failed to toggle like', error);
     }
-    setLoading(false)
-  }
-  
+  };
 
   return (
-    <button
-      onClick={toggleLike}
-      disabled={loading}
-      className={`mt-2 text-sm font-medium ${liked ? 'text-red-600' : 'text-gray-500'}`}
-    >
-      {liked ? '❤️ Liked' : '🤍 Like'} ({likesCount})
+    <button onClick={handleToggleLike} className="flex items-center gap-1">
+      {isLiked ? (
+        <Heart fill="red" color="red" className="w-5 h-5" />
+      ) : (
+        <Heart className="w-5 h-5 text-gray-600" />
+      )}
+      <span className="text-sm">{likeCount}</span>
     </button>
-  )
-}
+  );
+};
 
-export default LikeButton
+export default LikeButton;

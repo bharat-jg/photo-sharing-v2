@@ -17,22 +17,27 @@ def register_user(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Photo feed & upload
+# Photo feed and create
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticatedOrReadOnly])
 def photo_list_create(request):
     if request.method == 'GET':
-        photos = Photo.objects.all().order_by('-created_at')
+        user_id = request.GET.get('user_id')
+
+        if user_id:
+            photos = Photo.objects.filter(user__id=user_id).order_by('-created_at')
+        else:
+            photos = Photo.objects.all().order_by('-created_at')
+
         serializer = PhotoSerializer(photos, many=True)
         return Response(serializer.data)
-    
+
     elif request.method == 'POST':
         serializer = PhotoSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 # Photo detail
 @api_view(['GET'])
@@ -43,8 +48,9 @@ def photo_detail(request, pk):
     except Photo.DoesNotExist:
         return Response({"error": "Photo not found"}, status=404)
     
-    serializer = PhotoSerializer(photo)
+    serializer = PhotoSerializer(photo, context={'request': request})
     return Response(serializer.data)
+
 
 # Photo update & delete
 @api_view(['PATCH', 'DELETE'])

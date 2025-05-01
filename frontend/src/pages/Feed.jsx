@@ -16,48 +16,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/SideBar';
 import Navbar from '../components/Navbar';
+import { jwtDecode } from 'jwt-decode';
 
-const SearchBar = () => {
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const recentSearches = ['landscape', 'portrait', 'art', 'design', 'food'];
-
-  return (
-    <div className="relative w-full max-w-xl">
-      <div className="relative">
-        <input
-          type="text"
-          placeholder="Search photos, people, or collections"
-          className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onFocus={() => setIsSearchFocused(true)}
-          onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-      </div>
-
-      {isSearchFocused && (
-        <div className="absolute mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
-          <p className="px-4 py-1 text-sm text-gray-500">Recent Searches</p>
-          {recentSearches.map((search, index) => (
-            <div
-              key={index}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
-              onClick={() => setSearchQuery(search)}
-            >
-              <Search size={16} className="mr-2 text-gray-500" />
-              <span>{search}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const PhotoCard = ({ photo, onClick, isLiked, onLikeAnimation }) => {
+export const PhotoCard = ({ photo, onClick, isLiked, onLikeAnimation }) => {
   const [hovered, setHovered] = useState(false);
+  const token = localStorage.getItem('access_token');
+  let currentUserId = null;
+
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      currentUserId = decoded.user_id || decoded.id;
+    } catch (err) {
+      console.error('Token decode failed:', err);
+    }
+  }
+
+  const isLikedByCurrentUser = photo.likes.includes(currentUserId);
 
   return (
     <div
@@ -68,7 +43,7 @@ const PhotoCard = ({ photo, onClick, isLiked, onLikeAnimation }) => {
     >
       <img
         src={photo.image.replace(/^image\/upload\//, '')}
-        alt={photo.title}
+        alt={photo.caption}
         className="w-full h-auto object-cover"
       />
 
@@ -76,10 +51,15 @@ const PhotoCard = ({ photo, onClick, isLiked, onLikeAnimation }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-6 h-6 rounded-full bg-gray-300 mr-2"></div>
-            <span className="text-sm font-medium">{photo.user?.username}</span>
+            <span className="text-sm font-medium">{photo.user.username}</span>
           </div>
           <div className="flex items-center">
-            <Heart size={16} className="mr-1" />
+            <Heart
+              fill={isLikedByCurrentUser ? 'red' : 'none'}
+              color={isLikedByCurrentUser ? 'red' : 'white'}
+              size={16}
+              className="mr-1"
+            />
             <span className="text-xs">{photo.likes_count}</span>
           </div>
         </div>
@@ -91,12 +71,6 @@ const PhotoCard = ({ photo, onClick, isLiked, onLikeAnimation }) => {
           <div className="absolute top-3 right-3 flex flex-col gap-3">
             <button className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-200 transition-colors duration-200">
               <Bookmark size={18} className="text-gray-800" />
-            </button>
-            <button className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-200 transition-colors duration-200">
-              <Share2 size={18} className="text-gray-800" />
-            </button>
-            <button className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-200 transition-colors duration-200">
-              <Download size={18} className="text-gray-800" />
             </button>
           </div>
         </>

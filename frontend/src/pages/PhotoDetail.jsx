@@ -16,12 +16,15 @@ import {
   ChevronLeft,
   Flag,
   Link,
+  DownloadIcon,
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/SideBar';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-import { getCurrentUserId } from '../utils/auth'; // Adjust the import path as necessary
+import { getCurrentUserId } from '../utils/auth';
+import { PhotoCard } from './Feed';
+import LikeButton from '../components/LikeButton';
 
 // Format relative time
 const formatRelativeTime = (dateString) => {
@@ -295,11 +298,51 @@ const PhotoDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  // initial state
   const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newCaption, setNewCaption] = useState('');
   const textareaRef = useRef(null);
+  const [photos, setPhotos] = useState([]);
+  const [likedPhotoIds, setLikedPhotoIds] = useState([]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  useEffect(() => {
+    if (post) {
+      setIsLiked(post.liked); // 'liked' should come from API
+      setLikeCount(post.likes_count); // same here
+    }
+  }, [post]);
+
+  // Fetched photos of the user who posted the current photo
+  useEffect(() => {
+    const fetchUserPhotos = async () => {
+      if (!post || !post.user || !post.user.id) return; // ✅ Wait for valid post
+
+      try {
+        const postUserId = post.user.id;
+        const res = await axios.get(
+          `http://localhost:8000/api/photos/?user_id=${postUserId}`,
+          // `http://localhost:8000/api/photos/`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+            },
+          }
+        );
+        setPhotos(res.data);
+      } catch (err) {
+        console.error('Failed to fetch user photos:', err);
+      }
+    };
+
+    fetchUserPhotos();
+  }, [post]);
 
   // Fetch post and comments data
   useEffect(() => {
@@ -307,6 +350,8 @@ const PhotoDetail = () => {
       try {
         const res = await axios.get(`http://localhost:8000/api/photos/${id}/`);
         setPost(res.data);
+        setIsLiked(res.data.liked_by_user);
+        // console.log('Is liked:', res.data.liked_by_user);
         setComments(res.data.comments || []);
       } catch (err) {
         console.error('Failed to fetch post', err);
@@ -340,6 +385,21 @@ const PhotoDetail = () => {
     return <div className="pt-20 pl-16 md:pl-64 px-4">Loading...</div>;
   if (!post)
     return <div className="pt-20 pl-16 md:pl-64 px-4">Post not found.</div>;
+
+  //TODO: reuse this code
+  const token = localStorage.getItem('access_token');
+  let currentUserId = null;
+
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      currentUserId = decoded.user_id || decoded.id;
+    } catch (err) {
+      console.error('Token decode failed:', err);
+    }
+  }
+
+  const isPostLiked = post.likes.includes(currentUserId);
 
   const handlePostComment = async () => {
     if (!commentText.trim()) return;
@@ -424,6 +484,30 @@ const PhotoDetail = () => {
     textareaRef.current?.focus();
   };
 
+  const handleDownloadImage = async (imageUrl) => {
+    try {
+      const url = imageUrl.startsWith('https://')
+        ? imageUrl
+        : `https://${imageUrl.split('https://')[1]}`;
+
+      const response = await fetch(url);
+      const blob = await response.blob();
+
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+
+      // Set filename (optional: extract from URL or set a static name)
+      const filename = url.split('/').pop();
+      link.download = filename || 'downloaded-image.jpg';
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error downloading image:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
@@ -436,7 +520,7 @@ const PhotoDetail = () => {
               className="flex items-center text-gray-600 hover:text-gray-900 cursor-pointer"
             >
               <ChevronLeft size={20} className="mr-1" />
-              <span>Back to Home</span>
+              <span>Go Back</span>
             </button>
           </div>
 
@@ -549,21 +633,33 @@ const PhotoDetail = () => {
                 <div className="p-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <button
-                        className={`flex items-center focus:outline-none ${
-                          isLiked ? 'text-red-500' : 'text-gray-700'
-                        }`}
-                        onClick={() => setIsLiked(!isLiked)}
-                      >
-                        <Heart
-                          size={20}
-                          className={
-                            isLiked
-                              ? 'fill-red-500 cursor-pointer'
-                              : 'cursor-pointer'
-                          }
-                        />
-                      </button>
+                      <LikeButton
+                        photoId={post.id}
+                        isLiked={isPostLiked}
+                        likeCount={post.likes_count}
+                        onLikeChange={async () => {
+                          // Option 1: Refresh post data after toggle
+                          const res = await axios.get(
+                            `http://localhost:8000/api/photos/${post.id}/`
+                          );
+                          setPost(res.data);
+                        }}
+                      />
+                      {/* TODO: This is optimized code, bcoz the upper one fetch entire post */}
+                      {/* onLikeChange=
+                      {(liked) => {
+                        const updatedLikes = liked
+                          ? [...post.likes, currentUserId]
+                          : post.likes.filter((id) => id !== currentUserId);
+
+                        setPost({
+                          ...post,
+                          likes: updatedLikes,
+                          likes_count: liked
+                            ? post.likes_count + 1
+                            : post.likes_count - 1,
+                        });
+                      }} */}
                       <button
                         className="flex items-center text-gray-700 focus:outline-none cursor-pointer"
                         onClick={handleCommentClick}
@@ -591,6 +687,18 @@ const PhotoDetail = () => {
                             : 'cursor-pointer'
                         }
                       />
+                    </button>
+                    {/* {post.image.replace(/^image\/upload\//, '')} */}
+
+                    <button
+                      onClick={() =>
+                        handleDownloadImage(
+                          post.image.replace(/^image\/upload\//, '')
+                        )
+                      }
+                      className="p-2 rounded-full bg-gray-800 text-white hover:bg-gray-700"
+                    >
+                      <DownloadIcon size={20} />
                     </button>
                   </div>
                 </div>
@@ -650,25 +758,23 @@ const PhotoDetail = () => {
               )}
             </div>
           </div>
-
           <div>
             <h3 className="text-lg font-bold mb-4">
               More from @{post.user.username}
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-lg overflow-hidden bg-gray-100"
-                >
-                  <img
-                    src={`/api/placeholder/300/300?text=Photo ${i}`}
-                    alt={`Related photo ${i}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+          </div>
+          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+            {photos
+              .filter((photo) => photo.id !== post.id)
+              .map((photo) => (
+                <PhotoCard
+                  key={photo.id}
+                  photo={photo}
+                  isLiked={likedPhotoIds.includes(photo.id) && photo.liked}
+                  onLikeAnimation={() => handleLikeAnimation(photo.id)}
+                  onClick={() => navigate(`/photos/${photo.id}`)}
+                />
               ))}
-            </div>
           </div>
         </div>
       </main>
