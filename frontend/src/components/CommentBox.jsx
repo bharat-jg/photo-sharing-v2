@@ -1,36 +1,36 @@
-import { useState } from 'react'
-import axios from '../api/axios'
+import { useState } from 'react';
+import axios from '../api/axios';
 
 const CommentBox = ({ photoId, onNewComment }) => {
-  const [text, setText] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async e => {
-    e.preventDefault()
-    if (!text.trim()) return
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!text.trim()) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
       const res = await axios.post(
-        `/comments/`,  // ✅ updated endpoint
+        `/comments/`,
         {
-          photo: photoId,  // ✅ include photo ID in body
-          text: text
+          photo: photoId,
+          text: text,
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+          },
         }
-      )
+      );
 
-      onNewComment(res.data) // if you're displaying the new comment right away
-      setText('')
+      onNewComment(res.data);
+      setText('');
     } catch (err) {
-      console.error('Comment failed:', err)
+      console.error('Comment failed:', err);
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="mt-2 flex gap-2">
@@ -39,7 +39,7 @@ const CommentBox = ({ photoId, onNewComment }) => {
         className="border rounded px-2 py-1 flex-grow"
         placeholder="Add a comment..."
         value={text}
-        onChange={e => setText(e.target.value)}
+        onChange={(e) => setText(e.target.value)}
         disabled={loading}
       />
       <button
@@ -50,7 +50,7 @@ const CommentBox = ({ photoId, onNewComment }) => {
         Post
       </button>
     </form>
-  )
-}
+  );
+};
 
-export default CommentBox
+export default CommentBox;

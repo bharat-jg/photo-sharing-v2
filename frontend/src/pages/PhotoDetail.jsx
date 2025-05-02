@@ -1,22 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Heart,
   Download,
   Share2,
   Search,
-  Home,
-  Compass,
-  PlusSquare,
-  Bell,
-  User,
   MessageCircle,
   Bookmark,
-  MoreHorizontal,
   X,
   ChevronLeft,
-  Flag,
-  Link,
-  DownloadIcon,
+  Expand,
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/SideBar';
@@ -54,13 +45,7 @@ export const SearchBar = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const recentSearches = [
-    'landscape photography',
-    'portrait ideas',
-    'street art',
-    'minimalist design',
-    'food photography',
-  ];
+  const recentSearches = [];
 
   return (
     <div className="relative w-full max-w-xl">
@@ -77,7 +62,8 @@ export const SearchBar = () => {
         <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
       </div>
 
-      {isSearchFocused && (
+      {/* TODO: add recent searches from api */}
+      {recentSearches.length > 0 && isSearchFocused && (
         <div className="absolute mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
           <p className="px-4 py-1 text-sm text-gray-500">Recent Searches</p>
           {recentSearches.map((search, index) => (
@@ -95,8 +81,6 @@ export const SearchBar = () => {
     </div>
   );
 };
-
-// Sidebar component (reused from previous pages)
 
 // Comment component
 const Comment = ({ comment, comments, setComments, postUserId }) => {
@@ -307,6 +291,7 @@ const PhotoDetail = () => {
   const textareaRef = useRef(null);
   const [photos, setPhotos] = useState([]);
   const [likedPhotoIds, setLikedPhotoIds] = useState([]);
+  const currentUserId = getCurrentUserId();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -314,8 +299,8 @@ const PhotoDetail = () => {
 
   useEffect(() => {
     if (post) {
-      setIsLiked(post.liked); // 'liked' should come from API
-      setLikeCount(post.likes_count); // same here
+      setIsLiked(post.liked);
+      setLikeCount(post.likes_count);
     }
   }, [post]);
 
@@ -351,7 +336,6 @@ const PhotoDetail = () => {
         const res = await axios.get(`http://localhost:8000/api/photos/${id}/`);
         setPost(res.data);
         setIsLiked(res.data.liked_by_user);
-        // console.log('Is liked:', res.data.liked_by_user);
         setComments(res.data.comments || []);
       } catch (err) {
         console.error('Failed to fetch post', err);
@@ -363,41 +347,21 @@ const PhotoDetail = () => {
     fetchPost();
   }, [id]);
 
-  // Check if the current user is the owner of the post
+  //Check if the current user is the owner of the post
   useEffect(() => {
     if (post) {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        try {
-          const decoded = jwtDecode(token);
-          const userId = decoded.user_id || decoded.id; // Adjust based on your JWT payload
-          if (userId === post.user.id) {
-            setIsOwner(true);
-          }
-        } catch (err) {
-          console.error('Invalid token:', err);
+      if (currentUserId) {
+        if (currentUserId === post.user.id) {
+          setIsOwner(true);
         }
       }
     }
-  }, [post]); // Depend on `post` to trigger whenever `post` changes
+  }, [post]);
 
   if (loading)
     return <div className="pt-20 pl-16 md:pl-64 px-4">Loading...</div>;
   if (!post)
     return <div className="pt-20 pl-16 md:pl-64 px-4">Post not found.</div>;
-
-  //TODO: reuse this code
-  const token = localStorage.getItem('access_token');
-  let currentUserId = null;
-
-  if (token) {
-    try {
-      const decoded = jwtDecode(token);
-      currentUserId = decoded.user_id || decoded.id;
-    } catch (err) {
-      console.error('Token decode failed:', err);
-    }
-  }
 
   const isPostLiked = post.likes.includes(currentUserId);
 
@@ -448,8 +412,7 @@ const PhotoDetail = () => {
         },
       });
 
-      // After successful deletion, navigate to the homepage or other page
-      navigate('/'); // Or wherever you want the user to go
+      navigate('/');
     } catch (error) {
       console.error('Error deleting post:', error);
       alert('Failed to delete post.');
@@ -480,7 +443,7 @@ const PhotoDetail = () => {
     }
   };
 
-  const handleCommentClick = () => {
+  const focusCommentInput = () => {
     textareaRef.current?.focus();
   };
 
@@ -496,7 +459,6 @@ const PhotoDetail = () => {
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
 
-      // Set filename (optional: extract from URL or set a static name)
       const filename = url.split('/').pop();
       link.download = filename || 'downloaded-image.jpg';
 
@@ -542,19 +504,11 @@ const PhotoDetail = () => {
                     className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors cursor-pointer"
                   >
                     <span className="sr-only">View full size</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M15 3h6v6"></path>
-                      <path d="M10 14L21 3"></path>
-                      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
-                    </svg>
+                    <Expand
+                      size={20}
+                      className="text-gray-200"
+                      aria-label="View full size"
+                    />
                   </button>
                 </div>
               </div>
@@ -566,7 +520,7 @@ const PhotoDetail = () => {
                       src={
                         post.user.profile_photo ||
                         'https://cdn-icons-png.freepik.com/256/6994/6994705.png?ga=GA1.1.1704611719.1745213202&semt=ais_hybrid'
-                      } // Display profile photo, or fallback
+                      }
                       alt={post.user.username}
                       className="w-10 h-10 rounded-full mr-3"
                     />
@@ -606,7 +560,6 @@ const PhotoDetail = () => {
                     <p className="text-lg font-medium my-2">{post.caption}</p>
                   )}
                   <div className="text-sm text-gray-500 mb-2">
-                    {/* Format created_at based on your desired format */}
                     {formatRelativeTime(
                       new Date(post.created_at).toLocaleString()
                     )}
@@ -638,7 +591,6 @@ const PhotoDetail = () => {
                         isLiked={isPostLiked}
                         likeCount={post.likes_count}
                         onLikeChange={async () => {
-                          // Option 1: Refresh post data after toggle
                           const res = await axios.get(
                             `http://localhost:8000/api/photos/${post.id}/`
                           );
@@ -662,7 +614,7 @@ const PhotoDetail = () => {
                       }} */}
                       <button
                         className="flex items-center text-gray-700 focus:outline-none cursor-pointer"
-                        onClick={handleCommentClick}
+                        onClick={focusCommentInput}
                       >
                         <MessageCircle size={20} />
                       </button>
@@ -688,17 +640,15 @@ const PhotoDetail = () => {
                         }
                       />
                     </button>
-                    {/* {post.image.replace(/^image\/upload\//, '')} */}
-
                     <button
                       onClick={() =>
                         handleDownloadImage(
                           post.image.replace(/^image\/upload\//, '')
                         )
                       }
-                      className="p-2 rounded-full bg-gray-800 text-white hover:bg-gray-700"
+                      className="p-2 rounded-full bg-gray-800 text-white hover:bg-gray-700 cursor-pointer"
                     >
-                      <DownloadIcon size={20} />
+                      <Download size={20} />
                     </button>
                   </div>
                 </div>
@@ -732,7 +682,7 @@ const PhotoDetail = () => {
                       {commentText.trim() && (
                         <div className="flex justify-end mt-2">
                           <button
-                            className="bg-blue-600 text-white px-4 py-1 rounded-full"
+                            className="bg-blue-600 text-white px-4 py-1 rounded-full cursor-pointer"
                             onClick={handlePostComment}
                           >
                             Post
@@ -744,7 +694,6 @@ const PhotoDetail = () => {
 
                   <div>
                     {comments.map((comment) => (
-                      // <Comment key={comment.id} comment={comment} />
                       <Comment
                         key={comment.id}
                         comments={comments}
@@ -770,8 +719,7 @@ const PhotoDetail = () => {
                 <PhotoCard
                   key={photo.id}
                   photo={photo}
-                  isLiked={likedPhotoIds.includes(photo.id) && photo.liked}
-                  onLikeAnimation={() => handleLikeAnimation(photo.id)}
+                  isLiked={isPostLiked}
                   onClick={() => navigate(`/photos/${photo.id}`)}
                 />
               ))}
