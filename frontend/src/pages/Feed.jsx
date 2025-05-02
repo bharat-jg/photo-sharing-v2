@@ -1,38 +1,22 @@
 import { useEffect, useState } from 'react';
 import axios from '../api/axios';
-import {
-  Bookmark,
-  Download,
-  Share2,
-  Search,
-  Home,
-  Compass,
-  PlusSquare,
-  Bell,
-  User,
-  Heart,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Bookmark, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/SideBar';
 import Navbar from '../components/Navbar';
-import { jwtDecode } from 'jwt-decode';
+import { getCurrentUserId } from '../utils/auth';
 
-export const PhotoCard = ({ photo, onClick, isLiked, onLikeAnimation }) => {
+export const PhotoCard = ({ photo, onClick }) => {
   const [hovered, setHovered] = useState(false);
-  const token = localStorage.getItem('access_token');
-  let currentUserId = null;
 
-  if (token) {
-    try {
-      const decoded = jwtDecode(token);
-      currentUserId = decoded.user_id || decoded.id;
-    } catch (err) {
-      console.error('Token decode failed:', err);
-    }
+  const currentUserId = getCurrentUserId();
+  let isLikedByCurrentUser;
+
+  if (currentUserId) {
+    isLikedByCurrentUser = photo.likes.includes(currentUserId);
+  } else {
+    console.warn('User not logged in');
   }
-
-  const isLikedByCurrentUser = photo.likes.includes(currentUserId);
 
   return (
     <div
@@ -75,27 +59,12 @@ export const PhotoCard = ({ photo, onClick, isLiked, onLikeAnimation }) => {
           </div>
         </>
       )}
-
-      <AnimatePresence>
-        {isLiked && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          >
-            <div className="text-red-500 text-5xl">🔖</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
 
 export default function Feed() {
   const [photos, setPhotos] = useState([]);
-  const [likedPhotoIds, setLikedPhotoIds] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -114,13 +83,6 @@ export default function Feed() {
     fetchPhotos();
   }, []);
 
-  const handleLikeAnimation = (photoId) => {
-    setLikedPhotoIds((prev) => [...prev, photoId]);
-    setTimeout(() => {
-      setLikedPhotoIds((prev) => prev.filter((id) => id !== photoId));
-    }, 800);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -134,8 +96,6 @@ export default function Feed() {
             <PhotoCard
               key={photo.id}
               photo={photo}
-              isLiked={likedPhotoIds.includes(photo.id) && photo.liked}
-              onLikeAnimation={() => handleLikeAnimation(photo.id)}
               onClick={() => navigate(`/photos/${photo.id}`)}
             />
           ))}
