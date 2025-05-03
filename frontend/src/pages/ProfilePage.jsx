@@ -1,182 +1,216 @@
-import { useState } from 'react';
-import {
-  PencilIcon,
-  LockIcon,
-  GlobeIcon,
-  PlusIcon,
-  TrashIcon,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { PencilIcon, XIcon, CheckIcon } from 'lucide-react';
+import { PhotoCard } from './Feed';
+import { useNavigate } from 'react-router-dom';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('uploaded');
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [originalUserData, setOriginalUserData] = useState(null);
+  const [editingField, setEditingField] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [fieldValues, setFieldValues] = useState({});
+  const [photos, setPhotos] = useState([]);
+  const [sortOption, setSortOption] = useState(
+    () => localStorage.getItem('sortOption') || 'recent'
+  );
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
-  // Mock data
-  const user = {
-    name: 'Payal Ashtikar',
-    username: '@PayalAshtikar',
-    bio: 'Professional photographer and digital artist. Capturing the world one frame at a time.',
-    posts: 128,
-    email: 'Payal.Ashtikar@example.com',
-    joinedDate: 'January 2018',
-  };
+  const navigate = useNavigate();
 
-  // Mock uploads data
-  const uploads = [
-    {
-      id: 1,
-      imageUrl: '/api/placeholder/400/300',
-      title: 'Mountain Sunset',
-      likes: 234,
-    },
-    {
-      id: 2,
-      imageUrl: '/api/placeholder/400/500',
-      title: 'City Nightscape',
-      likes: 187,
-    },
-    {
-      id: 3,
-      imageUrl: '/api/placeholder/400/400',
-      title: 'Forest Path',
-      likes: 312,
-    },
-    {
-      id: 4,
-      imageUrl: '/api/placeholder/400/300',
-      title: 'Ocean Waves',
-      likes: 176,
-    },
-    {
-      id: 5,
-      imageUrl: '/api/placeholder/400/450',
-      title: 'Desert Dunes',
-      likes: 203,
-    },
-    {
-      id: 6,
-      imageUrl: '/api/placeholder/400/350',
-      title: 'Autumn Colors',
-      likes: 265,
-    },
-  ];
+  useEffect(() => {
+    localStorage.setItem('sortOption', sortOption);
+  }, [sortOption]);
 
-  // Mock albums data
-  const albums = [
-    {
-      id: 1,
-      coverUrl: '/api/placeholder/300/300',
-      title: 'Landscapes',
-      itemCount: 24,
-      isPrivate: false,
-    },
-    {
-      id: 2,
-      coverUrl: '/api/placeholder/300/300',
-      title: 'Architecture',
-      itemCount: 18,
-      isPrivate: false,
-    },
-    {
-      id: 3,
-      coverUrl: '/api/placeholder/300/300',
-      title: 'Personal',
-      itemCount: 32,
-      isPrivate: true,
-    },
-    {
-      id: 4,
-      coverUrl: '/api/placeholder/300/300',
-      title: 'Travel 2024',
-      itemCount: 47,
-      isPrivate: false,
-    },
-    {
-      id: 5,
-      coverUrl: '/api/placeholder/300/300',
-      title: 'Client Work',
-      itemCount: 15,
-      isPrivate: true,
-    },
-  ];
+  useEffect(() => {
+    if (userData?.id) {
+      fetchPhotos();
+    }
+  }, [userData?.id, sortOption]);
 
-  const toggleItemSelection = (id) => {
-    if (selectedItems.includes(id)) {
-      setSelectedItems(selectedItems.filter((itemId) => itemId !== id));
-    } else {
-      setSelectedItems([...selectedItems, id]);
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await axios.get('http://localhost:8000/api/profile/me/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUserData(res.data);
+        setOriginalUserData(res.data);
+        setFieldValues({
+          name: res.data.first_name + ' ' + res.data.last_name,
+          email: res.data.email,
+          username: res.data.username,
+          bio: res.data.bio || '',
+        });
+      } catch (err) {
+        console.error('Failed to fetch user data', err);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  const fetchPhotos = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await axios.get(
+        `http://localhost:8000/api/photos/?user_id=${userData?.id}&sort_by=${sortOption}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setPhotos(response.data);
+    } catch (error) {
+      console.error('Failed to fetch photos', error);
     }
   };
 
-  const toggleSelectMode = () => {
-    setIsSelectMode(!isSelectMode);
-    setSelectedItems([]);
+  const handleEditClick = (field) => {
+    setEditingField(field);
+    setFieldErrors({});
   };
 
-  const deleteSelectedItems = () => {
-    // Handle delete logic here
-    alert(`Deleting items: ${selectedItems.join(', ')}`);
-    setSelectedItems([]);
-    setIsSelectMode(false);
+  const handleCancelEdit = () => {
+    setFieldValues({
+      name: originalUserData.first_name + ' ' + originalUserData.last_name,
+      email: originalUserData.email,
+      username: originalUserData.username,
+      bio: originalUserData.bio || '',
+    });
+    setEditingField(null);
+    setFieldErrors({});
   };
+
+  const handleFieldChange = (field, value) => {
+    setFieldValues((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFieldSave = async (field) => {
+    const token = localStorage.getItem('access_token');
+    const payload = {};
+
+    if (field === 'name') {
+      const [first_name, ...lastArr] = fieldValues.name.trim().split(' ');
+      payload.first_name = first_name;
+      payload.last_name = lastArr.join(' ');
+    } else {
+      payload[field] = fieldValues[field];
+    }
+
+    try {
+      const res = await axios.patch(
+        'http://localhost:8000/api/profile/me/',
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setUserData(res.data);
+      setOriginalUserData(res.data);
+      setEditingField(null);
+      setFieldErrors({});
+    } catch (err) {
+      const errorMsg = err.response?.data?.[field]?.[0] || 'Invalid input';
+      setFieldErrors({ [field]: errorMsg });
+    }
+  };
+
+  const handleSortChange = (e) => {
+    setSortOption(e.target.value);
+  };
+
+  const handleChangePassword = async () => {
+    // Validation
+    const isValidPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(
+      newPassword
+    );
+
+    if (!isValidPassword) {
+      setPasswordError(
+        'Password must be at least 8 characters and include a capital letter, number, and special character.'
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        'http://localhost:8000/api/auth/change-password/',
+        {
+          current_password: currentPassword,
+          new_password: newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        }
+      );
+      setPasswordError('');
+      setPasswordSuccess('Password changed successfully!');
+      setTimeout(() => handleCloseModal(), 2000);
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.detail) {
+        setPasswordError(error.response.data.detail);
+      } else {
+        setPasswordError('Something went wrong. Try again.');
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowPasswordModal(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError('');
+    setPasswordSuccess('');
+  };
+
+  if (!userData) return <p>Loading...</p>;
+
+  const { profile_photo, posts_count } = userData;
 
   return (
     <div className="bg-gray-50 min-h-screen ml-20">
       {/* Profile Header */}
-      <div className="relative">
-        {/* Cover Photo */}
-        <div className="h-64 bg-gradient-to-r from-blue-400 to-purple-500 w-full">
-          <img
-            src="/api/placeholder/1200/400"
-            alt="Cover"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Profile Photo */}
-        <div className="absolute left-8 -bottom-16">
-          <div className="rounded-full w-32 h-32 border-4 border-white overflow-hidden">
+      <div className="p-8 mt-20 flex items-center justify-between">
+        <div className="flex items-center space-x-6">
+          <div className="rounded-full w-32 h-32 border-4 border-red-500 overflow-hidden">
             <img
-              src="/api/placeholder/200/200"
+              src={profile_photo || '/placeholder.jpg'}
               alt="Profile"
               className="w-full h-full object-cover"
             />
           </div>
-        </div>
-
-        {/* Edit Profile Button */}
-        <div className="absolute right-8 bottom-4">
-          <button
-            onClick={() => setIsEditingProfile(true)}
-            className="bg-white text-gray-800 px-4 py-2 rounded-lg shadow-md flex items-center hover:bg-gray-50"
-          >
-            <PencilIcon className="w-4 h-4 mr-2" />
-            Edit Profile
-          </button>
-        </div>
-      </div>
-
-      {/* User Info Section */}
-      <div className="pt-20 px-8 pb-6">
-        <h1 className="text-3xl font-bold text-gray-800">{user.name}</h1>
-        <p className="text-gray-500 mb-2">{user.username}</p>
-        <p className="text-gray-700 mb-4 max-w-2xl">{user.bio}</p>
-
-        {/* Stats */}
-        <div className="flex space-x-6">
-          <div className="text-center">
-            <span className="block font-bold text-gray-800">{user.posts}</span>
-            <span className="text-sm text-gray-500">Posts</span>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              {fieldValues.name}
+            </h1>
+            <p className="text-gray-500">@{fieldValues.username}</p>
+            <p className="text-gray-700 mt-2 max-w-xl">{fieldValues.bio}</p>
           </div>
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tabs */}
       <div className="border-b border-gray-200 px-8 sticky top-0 bg-white z-10">
         <div className="flex space-x-8">
-          {['profile', 'uploaded', 'albums'].map((tab) => (
+          {['profile', 'uploaded'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -195,61 +229,96 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Tab Content */}
       <div className="px-8 py-6">
-        {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <h2 className="text-xl font-semibold mb-4">
                 Personal Information
               </h2>
-
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">
-                    Full Name
-                  </label>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-800">{user.name}</span>
-                    <button className="text-gray-400 hover:text-blue-500">
-                      <PencilIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                {['name', 'email', 'username', 'bio'].map((field) => (
+                  <div key={field}>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      {field === 'name'
+                        ? 'Full Name'
+                        : field.charAt(0).toUpperCase() + field.slice(1)}
+                    </label>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">
-                    Email
-                  </label>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-800">{user.email}</span>
-                    <button className="text-gray-400 hover:text-blue-500">
-                      <PencilIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+                      {editingField === field ? (
+                        <>
+                          {field === 'bio' ? (
+                            <div className="flex-1">
+                              <textarea
+                                value={fieldValues[field] || ''}
+                                onChange={(e) => {
+                                  if (e.target.value.length <= 150) {
+                                    handleFieldChange(field, e.target.value);
+                                  }
+                                }}
+                                rows={3}
+                                placeholder="Write something about yourself..."
+                                className="text-gray-800 border border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md p-2 w-full resize-none"
+                              />
+                              <p className="text-sm text-gray-400 text-right mt-1">
+                                {fieldValues[field]?.length || 0}/150 characters
+                              </p>
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={fieldValues[field] || ''}
+                              onChange={(e) =>
+                                handleFieldChange(field, e.target.value)
+                              }
+                              className="flex-1 text-gray-800 border border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md p-2 w-full max-w-xl"
+                              placeholder="Enter value"
+                            />
+                          )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">
-                    Bio
-                  </label>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-800 truncate max-w-xs">
-                      {user.bio}
-                    </span>
-                    <button className="text-gray-400 hover:text-blue-500">
-                      <PencilIcon className="w-4 h-4" />
-                    </button>
+                          <div className="flex space-x-2">
+                            <CheckIcon
+                              title="Save"
+                              className="w-5 h-5 text-green-500 hover:text-green-600 cursor-pointer transition"
+                              onClick={() => handleFieldSave(field)}
+                            />
+                            <XIcon
+                              title="Cancel"
+                              className="w-5 h-5 text-gray-400 hover:text-red-400 cursor-pointer transition"
+                              onClick={handleCancelEdit}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-gray-800 flex-1 break-words min-h-[36px] border-1 rounded-md p-2 border-gray-300 focus:border-blue-500 focus:ring-blue-500 w-full max-w-xl">
+                            {fieldValues[field] || ''}
+                          </span>
+                          <button
+                            title="Edit"
+                            className="text-gray-400 hover:text-blue-500 transition"
+                            onClick={() => handleEditClick(field)}
+                          >
+                            <PencilIcon className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {fieldErrors[field] && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors[field]}
+                      </p>
+                    )}
                   </div>
-                </div>
+                ))}
               </div>
             </div>
 
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-lg shadow-sm">
                 <h2 className="text-xl font-semibold mb-4">Security</h2>
-
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-500">
@@ -257,168 +326,110 @@ export default function ProfilePage() {
                     </label>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-800">••••••••</span>
-                      <button className="text-blue-500 text-sm font-medium">
+                      <button
+                        onClick={() => setShowPasswordModal(true)}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
                         Change Password
                       </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Uploaded Tab */}
-        {activeTab === 'uploaded' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex space-x-4 items-center">
-                <select className="border border-gray-300 rounded-md px-3 py-2 bg-white">
-                  <option>All Uploads</option>
-                  <option>Public</option>
-                  <option>Private</option>
-                </select>
+                      {showPasswordModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative">
+                            <h2 className="text-xl font-semibold mb-4">
+                              Change Password
+                            </h2>
 
-                <select className="border border-gray-300 rounded-md px-3 py-2 bg-white">
-                  <option>Most Recent</option>
-                  <option>Most Popular</option>
-                  <option>Oldest</option>
-                </select>
-              </div>
+                            <div className="space-y-4">
+                              <input
+                                type="password"
+                                placeholder="Current password"
+                                value={currentPassword}
+                                onChange={(e) =>
+                                  setCurrentPassword(e.target.value)
+                                }
+                                className="w-full border rounded px-3 py-2"
+                              />
+                              <input
+                                type="password"
+                                placeholder="New password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                className="w-full border rounded px-3 py-2"
+                              />
+                              <input
+                                type="password"
+                                placeholder="Confirm new password"
+                                value={confirmPassword}
+                                onChange={(e) =>
+                                  setConfirmPassword(e.target.value)
+                                }
+                                className="w-full border rounded px-3 py-2"
+                              />
+                            </div>
 
-              <div className="flex space-x-3">
-                <button
-                  onClick={toggleSelectMode}
-                  className={`px-4 py-2 rounded-lg ${
-                    isSelectMode
-                      ? 'bg-gray-200 text-gray-800'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {isSelectMode ? 'Cancel Selection' : 'Select Items'}
-                </button>
+                            {passwordError && (
+                              <p className="text-red-500 text-sm mt-2">
+                                {passwordError}
+                              </p>
+                            )}
+                            {passwordSuccess && (
+                              <p className="text-green-600 text-sm mt-2">
+                                {passwordSuccess}
+                              </p>
+                            )}
 
-                {isSelectMode && selectedItems.length > 0 && (
-                  <button
-                    onClick={deleteSelectedItems}
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center"
-                  >
-                    <TrashIcon className="w-4 h-4 mr-2" />
-                    Delete ({selectedItems.length})
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Masonry Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {uploads.map((item) => (
-                <div
-                  key={item.id}
-                  className={`group relative rounded-lg overflow-hidden ${
-                    isSelectMode && selectedItems.includes(item.id)
-                      ? 'ring-2 ring-blue-500'
-                      : ''
-                  }`}
-                >
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all">
-                    {!isSelectMode && (
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
-                          <PencilIcon className="w-4 h-4 text-gray-700" />
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                      <h3 className="font-medium">{item.title}</h3>
-                      <div className="text-sm">{item.likes} likes</div>
-                    </div>
-
-                    {isSelectMode && (
-                      <div
-                        className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                        onClick={() => toggleItemSelection(item.id)}
-                      >
-                        <div
-                          className={`w-6 h-6 rounded-full border-2 ${
-                            selectedItems.includes(item.id)
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'border-white'
-                          }`}
-                        ></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Albums Tab */}
-        {activeTab === 'albums' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Your Albums</h2>
-
-              <button className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center">
-                <PlusIcon className="w-4 h-4 mr-2" />
-                Create Album
-              </button>
-            </div>
-
-            {/* Albums Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {albums.map((album) => (
-                <div
-                  key={album.id}
-                  className="bg-white rounded-lg overflow-hidden shadow-sm group hover:shadow-md transition-shadow"
-                >
-                  <div className="relative aspect-square">
-                    <img
-                      src={album.coverUrl}
-                      alt={album.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-2 right-2">
-                      {album.isPrivate ? (
-                        <div className="bg-gray-800 bg-opacity-75 p-1.5 rounded-full">
-                          <LockIcon className="w-4 h-4 text-white" />
-                        </div>
-                      ) : (
-                        <div className="bg-gray-800 bg-opacity-75 p-1.5 rounded-full">
-                          <GlobeIcon className="w-4 h-4 text-white" />
+                            <div className="flex justify-end mt-6 space-x-3">
+                              <button
+                                onClick={() => handleCloseModal()}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleChangePassword}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
-
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                      <div className="flex space-x-2">
-                        <button className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
-                          <PencilIcon className="w-4 h-4 text-gray-700" />
-                        </button>
-                        <button className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
-                          <TrashIcon className="w-4 h-4 text-red-500" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="font-medium text-gray-800">{album.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {album.itemCount} items
-                    </p>
                   </div>
                 </div>
-              ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'uploaded' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <select
+                value={sortOption}
+                onChange={handleSortChange}
+                className="border p-2 rounded-md"
+              >
+                <option value="recent">Most Recent</option>
+                <option value="popular">Most Popular</option>
+                <option value="oldest">Oldest</option>
+              </select>
+            </div>
+
+            <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+              {photos.length > 0 ? (
+                photos.map((photo) => (
+                  <PhotoCard
+                    key={photo.id}
+                    photo={photo}
+                    onClick={() => navigate(`/photos/${photo.id}`)}
+                  />
+                ))
+              ) : (
+                <p className="text-gray-500">No uploaded photos yet.</p>
+              )}
             </div>
           </div>
         )}

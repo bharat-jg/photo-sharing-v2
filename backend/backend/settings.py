@@ -148,7 +148,9 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ]
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 14,  # Load 20 images per request
 }
 
 from datetime import timedelta
@@ -175,3 +177,14 @@ cloudinary.config(
     api_key=CLOUDINARY_STORAGE["API_KEY"],
     api_secret=CLOUDINARY_STORAGE["API_SECRET"],
 )
+
+
+
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'viscora.305@gmail.com'
+EMAIL_HOST_PASSWORD = 'jnfp tkel ibiz mrzu'
+DEFAULT_FROM_EMAIL = 'viscora.305@gmail.coms'

@@ -1,5 +1,6 @@
 import { Heart } from 'lucide-react';
 import axios from 'axios';
+import { formatLikeCount } from '../utils/formatLikeCount';
 
 const LikeButton = ({ photoId, isLiked, likeCount, onLikeChange }) => {
   const token = localStorage.getItem('access_token');
@@ -33,7 +34,7 @@ const LikeButton = ({ photoId, isLiked, likeCount, onLikeChange }) => {
       ) : (
         <Heart className="w-5 h-5 text-gray-600" />
       )}
-      <span className="text-sm">{likeCount}</span>
+      <span className="text-sm">{formatLikeCount(likeCount)}</span>
     </button>
   );
 };

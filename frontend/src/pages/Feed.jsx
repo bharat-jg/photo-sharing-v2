@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/SideBar';
 import Navbar from '../components/Navbar';
 import { getCurrentUserId } from '../utils/auth';
+import { useRef } from 'react';
 
 export const PhotoCard = ({ photo, onClick }) => {
   const [hovered, setHovered] = useState(false);
@@ -65,28 +66,59 @@ export const PhotoCard = ({ photo, onClick }) => {
 
 export default function Feed() {
   const [photos, setPhotos] = useState([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef(null);
   const navigate = useNavigate();
+  const LIMIT = 5;
+
+  const fetchPhotos = async () => {
+    if (!hasMore) return;
+    try {
+      const res = await axios.get(
+        `http://localhost:8000/api/photos/feed/?limit=${LIMIT}&offset=${offset}`
+      );
+      const newPhotos = res.data.results;
+
+      console.log('Fetched photos:', newPhotos);
+      console.log('Current offset:', offset);
+      console.log('Current photos:', photos);
+      console.log('Current hasMore:', hasMore);
+
+      setPhotos((prevPhotos) => {
+        const existingIds = new Set(prevPhotos.map((p) => p.id));
+        const filtered = newPhotos.filter((p) => !existingIds.has(p.id));
+        return [...prevPhotos, ...filtered];
+      });
+
+      if (!res.data.next || newPhotos.length < LIMIT) setHasMore(false);
+    } catch (err) {
+      console.error('Failed to fetch photos:', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchPhotos = async () => {
-      try {
-        const res = await axios.get('/photos/', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        });
-        setPhotos(res.data);
-      } catch (err) {
-        console.error('Failed to fetch photos:', err);
-      }
-    };
     fetchPhotos();
-  }, []);
+  }, [offset]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setOffset((prevOffset) => prevOffset + LIMIT);
+        }
+      },
+      { threshold: 1 }
+    );
+
+    const loader = loaderRef.current;
+    if (loader) observer.observe(loader);
+    return () => loader && observer.unobserve(loader);
+  }, [hasMore]);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-
       <Sidebar />
 
       <main className="pt-24 pl-16 md:pl-20 pr-4 pb-8">
@@ -100,6 +132,20 @@ export default function Feed() {
             />
           ))}
         </div>
+
+        {hasMore && (
+          <div
+            ref={loaderRef}
+            className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 mt-4"
+          >
+            {[...Array(5)].map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="mb-4 h-64 bg-gray-200 animate-pulse rounded-xl w-full"
+              ></div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

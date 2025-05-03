@@ -1,78 +1,50 @@
 import { useState } from 'react';
-import axios from '../api/axios';
+import axios from 'axios';
 
-const ForgotPassword = () => {
-  const [username, setUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+export default function ForgotPassword() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setStatus('');
     try {
-      await axios.post('/change-password/', {
-        username,
-        new_password: newPassword,
-      });
-      setSuccess('Password changed successfully!');
-      setError('');
-    } catch (err) {
-      setError('Could not change password. Check username.');
-      setSuccess('');
+      await axios.post('http://localhost:8000/api/password-reset/', { email });
+      setStatus('A password reset link has been sent to your email.');
+    } catch (error) {
+      setStatus('Something went wrong.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white p-8 rounded-lg shadow w-full max-w-md">
-        <h2 className="text-2xl font-bold text-pink-600 mb-4">Reset Password</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md w-full bg-white p-6 rounded shadow">
+        <h2 className="text-2xl font-bold mb-4 text-gray-700">
+          Forgot Password
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            type="text"
-            placeholder="Enter username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md"
-            required
-          />
-          <input
-            type="password"
-            placeholder="New password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md"
+            type="email"
+            placeholder="Enter your email"
+            className="w-full p-2 border border-gray-300 rounded"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
           <button
             type="submit"
-            className="w-full bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 rounded-md"
+            disabled={loading}
+            className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 w-full"
           >
-            Change Password
+            {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
-          {success && <p className="text-green-600 text-sm">{success}</p>}
-          {error && <p className="text-red-500 text-sm">{error}</p>}
         </form>
+        {status && <p className="mt-4 text-sm text-green-600">{status}</p>}
       </div>
     </div>
   );
-};
-
-export default ForgotPassword;
-{/* change-password.py in views # views.py
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.contrib.auth.models import User
-
-@api_view(['POST'])
-def change_password(request):
-    username = request.data.get('username')
-    new_password = request.data.get('new_password')
-
-    try:
-        user = User.objects.get(username=username)
-        user.set_password(new_password)
-        user.save()
-        return Response({'message': 'Password updated successfully'})
-    except User.DoesNotExist:
-        return Response({'error': 'User not found'}, status=404)
-*/}
+}

@@ -12,7 +12,6 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/SideBar';
 import axios from 'axios';
-import { jwtDecode } from 'jwt-decode';
 import { getCurrentUserId } from '../utils/auth';
 import { PhotoCard } from './Feed';
 import LikeButton from '../components/LikeButton';
@@ -88,6 +87,8 @@ const Comment = ({ comment, comments, setComments, postUserId }) => {
 
   const currentUserId = getCurrentUserId();
 
+  console.log('Comment:', comment);
+
   const handleDeleteComment = async (commentId) => {
     const confirmDelete = window.confirm(
       'Are you sure you want to delete this comment?'
@@ -122,9 +123,9 @@ const Comment = ({ comment, comments, setComments, postUserId }) => {
           <div className="bg-gray-50 rounded-lg px-4 py-3">
             <div className="flex items-center justify-between mb-1">
               <div>
-                {/* <span className="font-medium text-gray-900">
-                  {comment.user.displayName}
-                </span> */}
+                <span className="font-medium text-gray-900">
+                  {comment.user.first_name} {comment.user.last_name}
+                </span>
                 <span className="text-gray-500 text-sm ml-2">
                   @{comment.user.username}
                 </span>
@@ -134,8 +135,8 @@ const Comment = ({ comment, comments, setComments, postUserId }) => {
               </span>
             </div>
             <p className="text-gray-800">{comment.text}</p>
-            {(comment.user.id === currentUserId.user_id ||
-              postUserId === currentUserId.user_id) && (
+            {(comment.user.id === currentUserId ||
+              postUserId === currentUserId) && (
               <button
                 onClick={() => handleDeleteComment(comment.id)}
                 className="text-red-500 text-xs mt-2"
@@ -290,7 +291,6 @@ const PhotoDetail = () => {
   const [newCaption, setNewCaption] = useState('');
   const textareaRef = useRef(null);
   const [photos, setPhotos] = useState([]);
-  const [likedPhotoIds, setLikedPhotoIds] = useState([]);
   const currentUserId = getCurrentUserId();
 
   useEffect(() => {
@@ -525,7 +525,9 @@ const PhotoDetail = () => {
                       className="w-10 h-10 rounded-full mr-3"
                     />
                     <div>
-                      <h3 className="font-medium">{post.user.username}</h3>
+                      <h3 className="font-medium">
+                        {post.first_name} {post.last_name}
+                      </h3>
                       <p className="text-sm text-gray-500">
                         @{post.user.username}
                       </p>
@@ -666,32 +668,32 @@ const PhotoDetail = () => {
                 </button>
               </div>
 
+              <div className="flex mb-6">
+                <div className="w-8 h-8 rounded-full bg-gray-300 mr-3"></div>
+                <div className="flex-1">
+                  <textarea
+                    ref={textareaRef}
+                    placeholder="Add a comment..."
+                    className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    rows={2}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                  ></textarea>
+                  {commentText.trim() && (
+                    <div className="flex justify-end mt-2">
+                      <button
+                        className="bg-blue-600 text-white px-4 py-1 rounded-full cursor-pointer"
+                        onClick={handlePostComment}
+                      >
+                        Post
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {showComments && (
                 <>
-                  <div className="flex mb-6">
-                    <div className="w-8 h-8 rounded-full bg-gray-300 mr-3"></div>
-                    <div className="flex-1">
-                      <textarea
-                        ref={textareaRef}
-                        placeholder="Add a comment..."
-                        className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        rows={2}
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                      ></textarea>
-                      {commentText.trim() && (
-                        <div className="flex justify-end mt-2">
-                          <button
-                            className="bg-blue-600 text-white px-4 py-1 rounded-full cursor-pointer"
-                            onClick={handlePostComment}
-                          >
-                            Post
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   <div>
                     {comments.map((comment) => (
                       <Comment
