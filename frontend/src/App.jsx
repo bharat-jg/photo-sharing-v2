@@ -13,14 +13,13 @@ import './index.css';
 import ForgotPassword from './pages/ForgotPassword';
 import PhotoDetail from './pages/PhotoDetail';
 import Explore from './pages/explore';
-import Notifications from './pages/Notifications';
 import ProfilePage from './pages/ProfilePage';
 import Layout from './pages/Layout';
 import Navbar from './components/Navbar'; // adjust path
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
-    // <Router>
     <Layout>
       <Routes>
         <Route
@@ -38,13 +37,12 @@ function App() {
           }
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
         <Route path="/photos/:id" element={<PhotoDetail />} />
         <Route path="/explore" element={<Explore />} />
-        <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </Layout>
-    // </Router>
   );
 }
 
