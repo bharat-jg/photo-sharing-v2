@@ -10,11 +10,11 @@ import {
   Expand,
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Sidebar from '../components/SideBar';
 import axios from 'axios';
 import { getCurrentUserId } from '../utils/auth';
 import { PhotoCard } from './Feed';
 import LikeButton from '../components/LikeButton';
+import SaveButton from '../components/SaveButton';
 
 // Format relative time
 const formatRelativeTime = (dateString) => {
@@ -86,8 +86,6 @@ const Comment = ({ comment, comments, setComments, postUserId }) => {
   const [isLiked, setIsLiked] = useState(false);
 
   const currentUserId = getCurrentUserId();
-
-  console.log('Comment:', comment);
 
   const handleDeleteComment = async (commentId) => {
     const confirmDelete = window.confirm(
@@ -300,6 +298,7 @@ const PhotoDetail = () => {
   useEffect(() => {
     if (post) {
       setIsLiked(post.liked);
+      setIsSaved(post.saved_by_user); // new line for bookmark
       setLikeCount(post.likes_count);
     }
   }, [post]);
@@ -336,7 +335,9 @@ const PhotoDetail = () => {
         const res = await axios.get(`http://localhost:8000/api/photos/${id}/`);
         setPost(res.data);
         setIsLiked(res.data.liked_by_user);
+        setIsSaved(res.data.saved_by_user); // new line for bookmark
         setComments(res.data.comments || []);
+        console.log('Inside fetchPost:', res.data);
       } catch (err) {
         console.error('Failed to fetch post', err);
       } finally {
@@ -364,6 +365,7 @@ const PhotoDetail = () => {
     return <div className="pt-20 pl-16 md:pl-64 px-4">Post not found.</div>;
 
   const isPostLiked = post.likes.includes(currentUserId);
+  const isPostSaved = post.bookmarks.includes(currentUserId);
 
   const handlePostComment = async () => {
     if (!commentText.trim()) return;
@@ -471,25 +473,26 @@ const PhotoDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar />
-
-      <main className="pt-20 pl-16 md:pl-64 pr-4 pb-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
+      <main className="pt-12 px-6 md:px-8 lg:px-12 pb-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Back Button */}
+          <div className="mb-6">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center text-gray-600 hover:text-gray-900 cursor-pointer"
+              className="flex items-center text-gray-600 hover:text-pink-600 transition-colors duration-200"
             >
               <ChevronLeft size={20} className="mr-1" />
-              <span>Go Back</span>
+              <span className="font-medium">Go Back</span>
             </button>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+          {/* Main Content Card */}
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
             <div className="md:flex">
+              {/* Image Section */}
               <div className="md:w-2/3 relative">
-                <div className="relative aspect-[4/3] bg-gray-100">
+                <div className="relative aspect-[4/3] bg-gray-50">
                   <img
                     src={
                       post.image.startsWith('https://')
@@ -501,31 +504,29 @@ const PhotoDetail = () => {
                   />
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors cursor-pointer"
+                    className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white 
+                             hover:bg-black/70 transition-colors duration-200"
                   >
-                    <span className="sr-only">View full size</span>
-                    <Expand
-                      size={20}
-                      className="text-gray-200"
-                      aria-label="View full size"
-                    />
+                    <Expand size={20} className="text-white" />
                   </button>
                 </div>
               </div>
 
+              {/* Details Section */}
               <div className="md:w-1/3 border-l border-gray-100">
-                <div className="p-4 border-b border-gray-100">
+                {/* User Info */}
+                <div className="p-6 border-b border-gray-100">
                   <div className="flex items-center">
                     <img
                       src={
                         post.user.profile_photo ||
-                        'https://cdn-icons-png.freepik.com/256/6994/6994705.png?ga=GA1.1.1704611719.1745213202&semt=ais_hybrid'
+                        'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
                       }
                       alt={post.user.username}
-                      className="w-10 h-10 rounded-full mr-3"
+                      className="w-12 h-12 rounded-full mr-4"
                     />
                     <div>
-                      <h3 className="font-medium">
+                      <h3 className="font-semibold text-gray-800">
                         {post.first_name} {post.last_name}
                       </h3>
                       <p className="text-sm text-gray-500">
@@ -535,48 +536,55 @@ const PhotoDetail = () => {
                   </div>
                 </div>
 
-                <div className="px-4 border-b border-gray-100">
+                {/* Caption Section */}
+                <div className="px-6 py-4 border-b border-gray-100">
                   {isEditing ? (
                     <div className="my-4">
                       <textarea
                         value={newCaption}
                         onChange={(e) => setNewCaption(e.target.value)}
-                        className="w-full min-h-20 max-h-50 p-2 border rounded"
+                        className="w-full min-h-20 max-h-50 p-3 border rounded-lg focus:ring-2 
+                                 focus:ring-pink-500 focus:border-transparent"
                       />
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-3 mt-3">
                         <button
                           onClick={submitCaptionEdit}
-                          className="px-3 py-1 h-7 bg-blue-500 text-white rounded text-sm"
+                          className="px-4 py-2 bg-pink-600 text-white rounded-full 
+                                   hover:bg-pink-700 transition-colors duration-200"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setIsEditing(false)}
-                          className="px-3 py-1 h-7 bg-gray-300 rounded text-sm"
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full 
+                                   hover:bg-gray-300 transition-colors duration-200"
                         >
                           Cancel
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-lg font-medium my-2">{post.caption}</p>
+                    <p className="text-lg text-gray-800">{post.caption}</p>
                   )}
-                  <div className="text-sm text-gray-500 mb-2">
-                    {formatRelativeTime(
-                      new Date(post.created_at).toLocaleString()
-                    )}
-
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-sm text-gray-500">
+                      {formatRelativeTime(
+                        new Date(post.created_at).toLocaleString()
+                      )}
+                    </span>
                     {isOwner && (
-                      <div className="actions">
+                      <div className="flex gap-3">
                         <button
                           onClick={handleEdit}
-                          className="btn btn-edit text-blue-500 text-xs mt-2"
+                          className="text-pink-600 text-sm hover:text-pink-700 
+                                   transition-colors duration-200"
                         >
                           Edit
                         </button>
                         <button
                           onClick={handleDeletePost}
-                          className="btn btn-delete text-red-500 text-xs mt-2 ml-3"
+                          className="text-red-500 text-sm hover:text-red-600 
+                                   transition-colors duration-200"
                         >
                           Delete
                         </button>
@@ -585,7 +593,8 @@ const PhotoDetail = () => {
                   </div>
                 </div>
 
-                <div className="p-4 border-b border-gray-100">
+                {/* Actions Section */}
+                <div className="p-6 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <LikeButton
@@ -599,132 +608,126 @@ const PhotoDetail = () => {
                           setPost(res.data);
                         }}
                       />
-                      {/* TODO: This is optimized code, bcoz the upper one fetch entire post */}
-                      {/* onLikeChange=
-                      {(liked) => {
-                        const updatedLikes = liked
-                          ? [...post.likes, currentUserId]
-                          : post.likes.filter((id) => id !== currentUserId);
-
-                        setPost({
-                          ...post,
-                          likes: updatedLikes,
-                          likes_count: liked
-                            ? post.likes_count + 1
-                            : post.likes_count - 1,
-                        });
-                      }} */}
                       <button
-                        className="flex items-center text-gray-700 focus:outline-none cursor-pointer"
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
                         onClick={focusCommentInput}
                       >
-                        <MessageCircle size={20} />
+                        <MessageCircle size={20} className="text-gray-700" />
                       </button>
                       <button
-                        className="flex items-center text-gray-700 focus:outline-none cursor-pointer"
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
                         onClick={() => setIsShareModalOpen(true)}
                       >
-                        <Share2 size={20} />
+                        <Share2 size={20} className="text-gray-700" />
                       </button>
                     </div>
-                    <button
-                      className={`focus:outline-none ${
-                        isSaved ? 'text-yellow-500' : 'text-gray-700'
-                      }`}
-                      onClick={() => setIsSaved(!isSaved)}
-                    >
-                      <Bookmark
-                        size={20}
-                        className={
-                          isSaved
-                            ? 'fill-yellow-500 cursor-pointer'
-                            : 'cursor-pointer'
-                        }
+                    <div className="flex items-center space-x-3">
+                      <SaveButton
+                        photoId={post.id}
+                        isSaved={isPostSaved}
+                        onSaveChange={async () => {
+                          const res = await axios.get(
+                            `http://localhost:8000/api/photos/${post.id}/`
+                          );
+                          setPost(res.data);
+                        }}
                       />
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleDownloadImage(
-                          post.image.replace(/^image\/upload\//, '')
-                        )
-                      }
-                      className="p-2 rounded-full bg-gray-800 text-white hover:bg-gray-700 cursor-pointer"
-                    >
-                      <Download size={20} />
-                    </button>
+                      <button
+                        onClick={() =>
+                          handleDownloadImage(
+                            post.image.replace(/^image\/upload\//, '')
+                          )
+                        }
+                        className="p-2 rounded-full bg-pink-600 text-white 
+                                 hover:bg-pink-700 transition-colors duration-200"
+                      >
+                        <Download size={20} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="border-t border-gray-100 p-4">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold">Comments</h3>
-                <button
-                  className="text-gray-500 text-sm cursor-pointer"
-                  onClick={() => setShowComments((prev) => !prev)}
-                >
-                  {showComments ? 'Hide comments' : 'Show comments'}
-                </button>
-              </div>
+                {/* Comments Section */}
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-semibold relative inline-block">
+                      <span className="relative z-10">Comments</span>
+                      <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-200 opacity-50"></div>
+                    </h3>
+                    <button
+                      className="text-gray-500 hover:text-pink-600 transition-colors duration-200"
+                      onClick={() => setShowComments((prev) => !prev)}
+                    >
+                      {showComments ? 'Hide comments' : 'Show comments'}
+                    </button>
+                  </div>
 
-              <div className="flex mb-6">
-                <div className="w-8 h-8 rounded-full bg-gray-300 mr-3"></div>
-                <div className="flex-1">
-                  <textarea
-                    ref={textareaRef}
-                    placeholder="Add a comment..."
-                    className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={2}
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                  ></textarea>
-                  {commentText.trim() && (
-                    <div className="flex justify-end mt-2">
-                      <button
-                        className="bg-blue-600 text-white px-4 py-1 rounded-full cursor-pointer"
-                        onClick={handlePostComment}
-                      >
-                        Post
-                      </button>
+                  {/* Comment Input */}
+                  <div className="flex mb-6">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 mr-3"></div>
+                    <div className="flex-1">
+                      <textarea
+                        ref={textareaRef}
+                        placeholder="Add a comment..."
+                        className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 
+                                 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                        rows={2}
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                      ></textarea>
+                      {commentText.trim() && (
+                        <div className="flex justify-end mt-2">
+                          <button
+                            className="bg-pink-600 text-white px-6 py-2 rounded-full 
+                                     hover:bg-pink-700 transition-colors duration-200"
+                            onClick={handlePostComment}
+                          >
+                            Post
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Comments List */}
+                  {showComments && (
+                    <div className="space-y-4">
+                      {comments.map((comment) => (
+                        <Comment
+                          key={comment.id}
+                          comments={comments}
+                          setComments={setComments}
+                          comment={comment}
+                          postUserId={post.user.id}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
-
-              {showComments && (
-                <>
-                  <div>
-                    {comments.map((comment) => (
-                      <Comment
-                        key={comment.id}
-                        comments={comments}
-                        setComments={setComments}
-                        comment={comment}
-                        postUserId={post.user.id}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
             </div>
           </div>
-          <div>
-            <h3 className="text-lg font-bold mb-4">
-              More from @{post.user.username}
+
+          {/* More Photos Section */}
+          <div className="mt-12">
+            <h3 className="text-2xl font-bold mb-6 relative inline-block">
+              <span className="relative z-10">
+                More from @{post.user.username}
+              </span>
+              <div className="absolute -bottom-2 left-0 w-full h-3 bg-pink-500 opacity-30 transform -rotate-1"></div>
             </h3>
-          </div>
-          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
-            {photos
-              .filter((photo) => photo.id !== post.id)
-              .map((photo) => (
-                <PhotoCard
-                  key={photo.id}
-                  photo={photo}
-                  isLiked={isPostLiked}
-                  onClick={() => navigate(`/photos/${photo.id}`)}
-                />
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {photos
+                .filter((photo) => photo.id !== post.id)
+                .map((photo) => (
+                  <PhotoCard
+                    key={photo.id}
+                    photo={photo}
+                    isLiked={isPostLiked}
+                    onClick={() => navigate(`/photos/${photo.id}`)}
+                  />
+                ))}
+            </div>
           </div>
         </div>
       </main>

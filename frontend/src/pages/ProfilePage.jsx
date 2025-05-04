@@ -3,9 +3,9 @@ import axios from 'axios';
 import { PencilIcon, XIcon, CheckIcon } from 'lucide-react';
 import { PhotoCard } from './Feed';
 import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState('uploaded');
   const [userData, setUserData] = useState(null);
   const [originalUserData, setOriginalUserData] = useState(null);
   const [editingField, setEditingField] = useState(null);
@@ -21,8 +21,35 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [savedPhotos, setSavedPhotos] = useState([]);
+  const [savedSortOption, setSavedSortOption] = useState('recent');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'uploaded';
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
 
+  console.log('savedPhotos', savedPhotos);
   const navigate = useNavigate();
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab }); // update the URL
+  };
+
+  useEffect(() => {
+    const fetchSavedPhotos = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await axios.get('http://localhost:8000/api/photos/saved/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setSavedPhotos(res.data);
+      } catch (err) {
+        console.error('Failed to load saved photos', err);
+      }
+    };
+    if (activeTab === 'saved') fetchSavedPhotos();
+  }, [activeTab]);
 
   useEffect(() => {
     localStorage.setItem('sortOption', sortOption);
@@ -181,6 +208,14 @@ export default function ProfilePage() {
     setPasswordSuccess('');
   };
 
+  const handleLogout = () => {
+    // Clear user authentication data (localStorage, sessionStorage, etc.)
+    localStorage.removeItem('access_token'); // Or clear cookies, or use your logout API if needed
+
+    // Redirect to login page
+    navigate('/login'); // Adjust the path as per your routing setup
+  };
+
   if (!userData) return <p>Loading...</p>;
 
   const { profile_photo, posts_count } = userData;
@@ -188,7 +223,7 @@ export default function ProfilePage() {
   return (
     <div className="bg-gray-50 min-h-screen ml-20">
       {/* Profile Header */}
-      <div className="p-8 mt-20 flex items-center justify-between">
+      <div className="p-8 mt-5 flex items-center justify-between">
         <div className="flex items-center space-x-6">
           <div className="rounded-full w-32 h-32 border-4 border-red-500 overflow-hidden">
             <img
@@ -210,10 +245,10 @@ export default function ProfilePage() {
       {/* Tabs */}
       <div className="border-b border-gray-200 px-8 sticky top-0 bg-white z-10">
         <div className="flex space-x-8">
-          {['profile', 'uploaded'].map((tab) => (
+          {['profile', 'uploaded', 'saved'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(`${tab}`)}
               className={`py-4 px-1 relative ${
                 activeTab === tab
                   ? 'text-blue-600'
@@ -398,8 +433,54 @@ export default function ProfilePage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Logout Section */}
+                  <div className="border-t border-gray-200 pt-4 mt-4">
+                    <label className="block text-sm font-medium text-gray-500">
+                      Logout
+                    </label>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-800">
+                        Log out of your account
+                      </span>
+                      <button
+                        onClick={() => setShowLogoutConfirmation(true)}
+                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Logout Confirmation Modal */}
+              {showLogoutConfirmation && (
+                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+                  <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                      Are you sure?
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-6">
+                      You will be logged out of your account.
+                    </p>
+                    <div className="flex justify-end gap-4">
+                      <button
+                        onClick={() => setShowLogoutConfirmation(false)}
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleLogout} // Define this function to handle logout
+                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -424,11 +505,43 @@ export default function ProfilePage() {
                   <PhotoCard
                     key={photo.id}
                     photo={photo}
-                    onClick={() => navigate(`/photos/${photo.id}`)}
+                    onClick={() =>
+                      navigate(`/photos/${photo.id}?tab=${activeTab}`)
+                    }
                   />
                 ))
               ) : (
                 <p className="text-gray-500">No uploaded photos yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'saved' && (
+          <div>
+            {/* <div className="flex justify-between items-center mb-6">
+              <select
+                value={savedSortOption}
+                onChange={(e) => setSavedSortOption(e.target.value)}
+                className="border p-2 rounded-md"
+              >
+                <option value="recent">Most Recent</option>
+                <option value="popular">Most Popular</option>
+                <option value="oldest">Oldest</option>
+              </select>
+            </div> */}
+
+            <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+              {savedPhotos.length > 0 ? (
+                savedPhotos.map((photo) => (
+                  <PhotoCard
+                    key={photo.id}
+                    photo={photo}
+                    onClick={() => navigate(`/photos/${photo.id}`)}
+                  />
+                ))
+              ) : (
+                <p className="text-gray-500">No saved photos yet.</p>
               )}
             </div>
           </div>

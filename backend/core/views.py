@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from django.contrib.auth.models import User
-from .models import Photo, Comment, Like
+from .models import Bookmark, Photo, Comment, Like
 from .serializers import UserSerializer, PhotoSerializer, CommentSerializer, UserProfileSerializer
 from django.db.models import Count
 from django.contrib.auth.tokens import default_token_generator
@@ -232,3 +232,29 @@ def change_password(request):
     user.set_password(new_password)
     user.save()
     return Response({"detail": "Password updated successfully"})
+
+
+# views.py
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def save_toggle(request, photo_id):
+    try:
+        photo = Photo.objects.get(id=photo_id)
+    except Photo.DoesNotExist:
+        return Response({"error": "Photo not found"}, status=404)
+    
+    bookmark, created = Bookmark.objects.get_or_create(user=request.user, photo=photo)
+    if not created:
+        bookmark.delete()
+        return Response({"status": "unsaved"})
+    return Response({"status": "saved"})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def saved_photos(request):
+    saved = Bookmark.objects.filter(user=request.user).select_related('photo')
+    photos = [bookmark.photo for bookmark in saved]
+    serializer = PhotoSerializer(photos, many=True, context={"request": request})
+    return Response(serializer.data)
+

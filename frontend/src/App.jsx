@@ -7,7 +7,6 @@ import {
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Feed from './pages/Feed';
-import { isAuthenticated } from './utils/auth';
 import UploadPhoto from './pages/UploadPhoto';
 import './index.css';
 import ForgotPassword from './pages/ForgotPassword';
@@ -17,30 +16,60 @@ import ProfilePage from './pages/ProfilePage';
 import Layout from './pages/Layout';
 import Navbar from './components/Navbar'; // adjust path
 import ResetPassword from './pages/ResetPassword';
+import ProtectedRoute from './components/ProtectedRoute';
+import NotFound from './pages/NotFound';
+import LandingPage from './pages/LandingPage';
 
 function App() {
   return (
     <Layout>
       <Routes>
+        <Route path="/landing" element={<LandingPage />} />
         <Route
           path="/"
-          element={isAuthenticated() ? <Feed /> : <Navigate to="/login" />}
+          element={
+            <ProtectedRoute>
+              <Feed />
+            </ProtectedRoute>
+          }
         />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route
           path="/upload"
           element={
-            <>
+            <ProtectedRoute>
               <UploadPhoto />
-            </>
+            </ProtectedRoute>
           }
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
-        <Route path="/photos/:id" element={<PhotoDetail />} />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route
+          path="/photos/:id"
+          element={
+            <ProtectedRoute>
+              <PhotoDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/explore"
+          element={
+            <ProtectedRoute>
+              <Explore />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
   );

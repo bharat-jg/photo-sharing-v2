@@ -6,7 +6,9 @@ from .views import (
     comment_create,
     comment_delete,
     like_toggle,
-    photo_update_delete, current_user_profile, password_reset_request, password_reset_confirm, photo_feed, change_password
+    photo_update_delete, current_user_profile, password_reset_request, password_reset_confirm, photo_feed, change_password,
+    save_toggle,
+    saved_photos
 )
 
 urlpatterns = [
@@ -31,4 +33,9 @@ urlpatterns = [
     #user
     path('profile/me/', current_user_profile, name="current-user-profile"), 
     path('auth/change-password/', change_password, name="change-password"), 
+
+    # bookmarks
+    path("photos/<int:photo_id>/save-toggle/", save_toggle, name="save-toggle"),
+    path("photos/saved/", saved_photos, name="saved-photos"),
+
 ]

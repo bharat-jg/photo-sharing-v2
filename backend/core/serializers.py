@@ -54,6 +54,7 @@ class PhotoSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
     likes = serializers.SerializerMethodField()
+    bookmarks = serializers.SerializerMethodField()  # ✅ NEW
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
 
@@ -68,9 +69,9 @@ class PhotoSerializer(serializers.ModelSerializer):
             "comments",
             "likes_count",
             "likes",
+            "bookmarks",  # ✅ NEW
             "first_name",
             "last_name",
-            
         ]
 
     def get_likes_count(self, obj):
@@ -78,6 +79,10 @@ class PhotoSerializer(serializers.ModelSerializer):
 
     def get_likes(self, obj):
         return obj.likes.values_list('user_id', flat=True)
+
+    def get_bookmarks(self, obj):
+        return obj.bookmarks.values_list('user_id', flat=True)
+
 
 
 # User Profile Information Serializer 

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import axios from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-
 import { Link } from 'react-router-dom';
 
 const Login = () => {
@@ -17,12 +16,22 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('/token/', form);
-      localStorage.setItem('access_token', res.data.access);
-      localStorage.setItem('refresh_token', res.data.refresh);
-      navigate('/');
-    } catch (err) {
-      setError('Login failed');
+      const response = await fetch('http://localhost:8000/api/token/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('access_token', data.access);
+        navigate('/'); // Redirect to feed page after successful login
+      } else {
+        setError('Invalid credentials');
+      }
+    } catch (error) {
+      setError('An error occurred. Please try again.');
     }
   };
 

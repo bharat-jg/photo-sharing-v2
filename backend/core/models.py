@@ -53,3 +53,18 @@ class Like(models.Model):
 
     def __str__(self):
         return f"{self.user.username} liked Photo {self.photo.id}"
+
+
+class Bookmark(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookmarks')
+    photo = models.ForeignKey('Photo', on_delete=models.CASCADE, related_name='bookmarks')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'photo')
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'photo'], name='unique_user_bookmark')
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} bookmarked {self.photo.id}"

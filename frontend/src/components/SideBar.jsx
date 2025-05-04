@@ -7,7 +7,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { icon: <Home size={24} />, label: 'Home', path: '/' },
-    { icon: <Compass size={24} />, label: 'Explore', path: '/explore' },
+    // { icon: <Compass size={24} />, label: 'Explore', path: '/explore' },
     { icon: <PlusSquare size={24} />, label: 'Upload', path: '/upload' },
     { icon: <User size={24} />, label: 'Profile', path: '/profile' },
   ];

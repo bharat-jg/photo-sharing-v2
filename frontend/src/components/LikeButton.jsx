@@ -28,7 +28,12 @@ const LikeButton = ({ photoId, isLiked, likeCount, onLikeChange }) => {
   };
 
   return (
-    <button onClick={handleToggleLike} className="flex items-center gap-1">
+    <button
+      onClick={handleToggleLike}
+      className="flex items-center gap-1 transition-all hover:scale-105 hover:opacity-80"
+      title="Like this photo"
+    >
+      {/* {isLiked ? 'Unlike' : 'Like'} */}
       {isLiked ? (
         <Heart fill="red" color="red" className="w-5 h-5" />
       ) : (

@@ -1,9 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
 
-export const isAuthenticated = () => {
-  return !!localStorage.getItem('access_token');
-};
-
 // Return the full user object decoded from JWT
 export const getCurrentUser = () => {
   const token = localStorage.getItem('access_token');
