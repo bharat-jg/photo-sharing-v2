@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { PencilIcon, XIcon, CheckIcon } from 'lucide-react';
+import { PencilIcon, XIcon, CheckIcon, Camera, Trash2 } from 'lucide-react';
 import { PhotoCard } from './Feed';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import UserProfileSkeleton from '../components/skeletons/UserProfileSkeleton';
 
 export default function ProfilePage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPhotoLoading, setIsPhotoLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [originalUserData, setOriginalUserData] = useState(null);
   const [editingField, setEditingField] = useState(null);
@@ -28,8 +31,11 @@ export default function ProfilePage() {
   const defaultTab = searchParams.get('tab') || 'uploaded';
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState(null);
+  const [photoSuccess, setPhotoSuccess] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-  console.log('savedPhotos', savedPhotos);
   const navigate = useNavigate();
 
   const handleTabChange = (tab) => {
@@ -64,6 +70,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchUserData = async () => {
+      setIsLoading(true);
       try {
         const token = localStorage.getItem('access_token');
         const res = await axios.get('http://localhost:8000/api/profile/me/', {
@@ -79,12 +86,15 @@ export default function ProfilePage() {
         });
       } catch (err) {
         console.error('Failed to fetch user data', err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchUserData();
   }, []);
 
   const fetchPhotos = async () => {
+    setIsPhotoLoading(true);
     try {
       const token = localStorage.getItem('access_token');
       const response = await axios.get(
@@ -98,6 +108,8 @@ export default function ProfilePage() {
       setPhotos(response.data);
     } catch (error) {
       console.error('Failed to fetch photos', error);
+    } finally {
+      setIsPhotoLoading(false);
     }
   };
 
@@ -209,15 +221,78 @@ export default function ProfilePage() {
     setPasswordSuccess('');
   };
 
-  const handleLogout = () => {
-    // Clear user authentication data (localStorage, sessionStorage, etc.)
-    localStorage.removeItem('access_token'); // Or clear cookies, or use your logout API if needed
+  const handleProfilePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    // Redirect to login page
-    navigate('/login'); // Adjust the path as per your routing setup
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      setPhotoError('Please upload a valid image file (JPEG or PNG)');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    const formData = new FormData();
+    formData.append('profile_photo', file);
+
+    try {
+      const response = await axios.post(
+        'http://localhost:8000/api/profile/update-photo/',
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.data.profile_photo) {
+        setUserData((prev) => ({
+          ...prev,
+          profile_photo: response.data.profile_photo,
+        }));
+        setPhotoSuccess(true);
+        setTimeout(() => setPhotoSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error(
+        'Error uploading photo:',
+        error.response?.data || error.message
+      );
+      setPhotoError(error.response?.data?.error || 'Failed to upload photo');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
-  if (!userData) return <p>Loading...</p>;
+  const handleDeletePhoto = async () => {
+    try {
+      await axios.delete('http://localhost:8000/api/profile/delete-photo/', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+
+      setUserData((prev) => ({
+        ...prev,
+        profile_photo: null,
+      }));
+      setPhotoSuccess(true);
+      setTimeout(() => setPhotoSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      setPhotoError('Failed to delete profile photo');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+
+    navigate('/login');
+  };
+
+  if (isLoading || !userData || isPhotoLoading) return <UserProfileSkeleton />;
 
   const { profile_photo, posts_count } = userData;
 
@@ -226,12 +301,113 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <div className="p-8 mt-5">
         <div className="flex items-center space-x-8  mb-8">
-          <div className="rounded-full w-32 h-32 border-4 border-pink-500 overflow-hidden shadow-lg">
+          <div className="rounded-full w-32 h-32 border-3 border-pink-400 overflow-hidden shadow-lg relative group">
             <img
-              src={profile_photo || '/placeholder.jpg'}
+              src={
+                profile_photo ||
+                'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
+              }
               alt="Profile"
               className="w-full h-full object-cover"
             />
+            <label className="absolute inset-0 bg-gray-400 bg-opacity-50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity duration-200">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePhotoChange}
+                className="hidden"
+              />
+              {isUploadingPhoto ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-white"></div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <Camera className="h-6 w-6 text-white" />
+                  {profile_photo && (
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowDeleteConfirmation(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 backdrop-blur-sm 
+                 rounded-full text-xs text-white hover:text-white hover:bg-red-500/70 
+                 transition-all duration-200 border border-red-400/30"
+                    >
+                      <Trash2 size={15} />
+                      {/* Remove photo */}
+                    </motion.button>
+                  )}
+                  {showDeleteConfirmation && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 w-full max-w-sm mx-4 shadow-xl"
+                      >
+                        <div className="flex flex-col items-center text-center">
+                          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                            <Trash2 className="w-8 h-8 text-red-500" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                            Remove Profile Photo?
+                          </h3>
+                          <p className="text-gray-600 mb-6">
+                            Are you sure you want to remove your profile photo?
+                          </p>
+                          <div className="flex gap-3">
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={(e) => {
+                                e.preventDefault(); // Add this
+                                e.stopPropagation(); // Add this
+                                setShowDeleteConfirmation(false);
+                              }}
+                              className="px-5 py-2 bg-gray-100 text-gray-700 rounded-full font-medium 
+             hover:bg-gray-200 transition-all duration-200"
+                            >
+                              Cancel
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={(e) => {
+                                handleDeletePhoto();
+                                setShowDeleteConfirmation(false);
+                                e.preventDefault(); // Add this
+                                e.stopPropagation(); // Add this
+                              }}
+                              className="px-5 py-2 bg-red-500 text-white rounded-full font-medium 
+                     hover:bg-red-600 shadow-md hover:shadow-lg 
+                     transition-all duration-200"
+                            >
+                              Remove Photo
+                            </motion.button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {photoError && (
+                <div className="absolute -bottom-12 left-0 right-0 text-center">
+                  <p className="text-red-500 text-sm bg-white/90 px-2 py-1 rounded">
+                    {photoError}
+                  </p>
+                </div>
+              )}
+              {photoSuccess && (
+                <div className="absolute -bottom-12 left-0 right-0 text-center">
+                  <p className="text-green-500 text-sm bg-white/90 px-2 py-1 rounded">
+                    Photo updated successfully!
+                  </p>
+                </div>
+              )}
+            </label>
           </div>
           <div>
             <h1 className="text-4xl font-bold text-gray-800 mb-2 relative inline-block">

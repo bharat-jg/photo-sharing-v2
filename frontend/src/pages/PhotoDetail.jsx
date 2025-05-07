@@ -17,6 +17,35 @@ import LikeButton from '../components/LikeButton';
 import SaveButton from '../components/SaveButton';
 import { motion } from 'framer-motion';
 
+const DEFAULT_PROFILE_PHOTO =
+  'https://cdn-icons-png.freepik.com/256/6994/6994705.png';
+
+const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${
+  import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+}`;
+
+const getProfilePhotoUrl = (photoUrl) => {
+  if (!photoUrl) return DEFAULT_PROFILE_PHOTO;
+
+  try {
+    // If it's already a complete URL, return it
+    if (photoUrl.startsWith('http')) {
+      return photoUrl;
+    }
+
+    // If it's a Cloudinary path, construct the complete URL
+    if (photoUrl.startsWith('image/upload/')) {
+      return `${CLOUDINARY_BASE_URL}/${photoUrl}`;
+    }
+
+    // If it's just the ID part, add both base URL and image/upload
+    return `${CLOUDINARY_BASE_URL}/image/upload/${photoUrl}`;
+  } catch (error) {
+    console.error('Error processing profile photo URL:', error);
+    return DEFAULT_PROFILE_PHOTO;
+  }
+};
+
 // Format relative time
 const formatRelativeTime = (dateString) => {
   const date = new Date(dateString);
@@ -115,9 +144,13 @@ const Comment = ({ comment, comments, setComments, postUserId }) => {
     >
       <div className="flex group">
         <img
-          src="https://cdn-icons-png.freepik.com/256/6994/6994705.png"
-          alt={comment.user.username}
-          className="w-8 h-8 rounded-full mr-3 shadow-sm transition-transform duration-200 group-hover:scale-105"
+          src={getProfilePhotoUrl(comment.user?.profile?.profile_photo)}
+          alt={`${comment.user?.username || 'User'}'s profile`}
+          className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
+          onError={(e) => {
+            e.target.src = DEFAULT_PROFILE_PHOTO;
+          }}
+          loading="lazy"
         />
         <div className="flex-1">
           <div className="bg-gray-50 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition-all duration-200">
@@ -378,7 +411,6 @@ const PhotoDetail = () => {
         setIsLiked(res.data.liked_by_user);
         setIsSaved(res.data.saved_by_user); // new line for bookmark
         setComments(res.data.comments || []);
-        console.log('Inside fetchPost:', res.data);
       } catch (err) {
         console.error('Failed to fetch post', err);
       } finally {
@@ -542,7 +574,7 @@ const PhotoDetail = () => {
                           : `https://${post.image.split('https://')[1]}`
                       }
                       alt={post.caption}
-                      className="absolute inset-0 w-full h-full object-contain"
+                      className="absolute inset-0 w-full h-full object-contain p-7"
                     />
                     <button
                       onClick={() => setIsModalOpen(true)}
@@ -560,12 +592,15 @@ const PhotoDetail = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <img
-                          src={
-                            post.user.profile_photo ||
-                            'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
-                          }
-                          alt={post.user.username}
-                          className="w-12 h-12 rounded-full mr-4"
+                          src={getProfilePhotoUrl(
+                            post.user?.profile?.profile_photo
+                          )}
+                          alt={`${post.user?.username || 'User'}'s profile`}
+                          className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
+                          onError={(e) => {
+                            e.target.src = DEFAULT_PROFILE_PHOTO;
+                          }}
+                          loading="lazy"
                         />
                         <div>
                           <h3 className="font-semibold text-gray-800">
@@ -737,12 +772,13 @@ const PhotoDetail = () => {
                 {/* Comment Input */}
                 <div className="flex mb-6">
                   <img
-                    src={
-                      post.user.profile_photo ||
-                      'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
-                    }
-                    alt="Your profile"
-                    className="w-10 h-10 rounded-full mr-4"
+                    src={getProfilePhotoUrl(post.user?.profile?.profile_photo)}
+                    alt={`${post.user?.username || 'User'}'s profile`}
+                    className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
+                    onError={(e) => {
+                      e.target.src = DEFAULT_PROFILE_PHOTO;
+                    }}
+                    loading="lazy"
                   />
                   <div className="flex-1">
                     <textarea
