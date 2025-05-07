@@ -4,6 +4,7 @@ import { Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUserId } from '../utils/auth';
 import FeedSkeleton from '../components/skeletons/FeedSkeleton';
+import { DefaultAvatar } from '../components/DefaultAvatar';
 
 export const PhotoCard = ({ photo, onClick }) => {
   const DEFAULT_PROFILE_PHOTO =
@@ -52,15 +53,16 @@ export const PhotoCard = ({ photo, onClick }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm p-0.5">
-              <img
-                src={getProfilePhotoUrl(photo.user?.profile?.profile_photo)}
-                alt={`${photo.user?.username || 'User'}'s profile`}
-                className="w-full h-full rounded-full object-cover"
-                onError={(e) => {
-                  e.target.src = DEFAULT_PROFILE_PHOTO;
-                }}
-                loading="lazy"
-              />
+              {photo.user?.profile?.profile_photo ? (
+                <img
+                  src={getProfilePhotoUrl(photo.user.profile.profile_photo)}
+                  alt={`${photo.user?.username || 'User'}'s profile`}
+                  className="w-full h-full rounded-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <DefaultAvatar size="sm" />
+              )}
             </div>
             <span className="text-white font-medium text-sm">
               {photo.user.username}
@@ -102,36 +104,27 @@ export default function Feed() {
 
   const fetchPhotos = async (currentOffset, isInitialLoad = false) => {
     if (isFetchingMore) {
-      console.log('Already fetching more photos, skipping...');
       return;
     }
-    
+
     try {
       setIsFetchingMore(true);
       const limit = isInitialLoad ? INITIAL_LIMIT : SCROLL_LIMIT;
-      
-      console.log(`Fetching photos with offset: ${currentOffset}, limit: ${limit}`);
-      
+
       const res = await axios.get(
         `http://localhost:8000/api/photos/feed/?limit=${limit}&offset=${currentOffset}`
       );
       const newPhotos = res.data.results;
 
-      console.log(`Fetched ${newPhotos.length} new photos`);
-      console.log('New photos:', newPhotos);
-
       setPhotos((prevPhotos) => {
-        const existingIds = new Set(prevPhotos.map(p => p.id));
-        const filtered = newPhotos.filter(p => !existingIds.has(p.id));
-        console.log(`Adding ${filtered.length} unique photos to existing ${prevPhotos.length} photos`);
+        const existingIds = new Set(prevPhotos.map((p) => p.id));
+        const filtered = newPhotos.filter((p) => !existingIds.has(p.id));
         return [...prevPhotos, ...filtered];
       });
 
       // Update hasMore based on whether we got fewer photos than requested
       const hasMorePhotos = newPhotos.length >= limit;
-      console.log(`Has more photos: ${hasMorePhotos}`);
       setHasMore(hasMorePhotos);
-
     } catch (err) {
       console.error('Failed to fetch photos:', err);
     } finally {
@@ -142,7 +135,6 @@ export default function Feed() {
 
   // Initial load
   useEffect(() => {
-    console.log('Initial load - fetching first batch of photos');
     fetchPhotos(0, true);
   }, []);
 
@@ -152,30 +144,26 @@ export default function Feed() {
       (entries) => {
         const firstEntry = entries[0];
         if (firstEntry.isIntersecting && hasMore && !isFetchingMore) {
-          console.log('Intersection observed, fetching more photos');
-          setOffset(prevOffset => {
+          setOffset((prevOffset) => {
             const newOffset = prevOffset + SCROLL_LIMIT;
-            console.log(`Updating offset from ${prevOffset} to ${newOffset}`);
             fetchPhotos(newOffset, false);
             return newOffset;
           });
         }
       },
-      { 
-        rootMargin: '200px', 
-        threshold: 0.1
+      {
+        rootMargin: '200px',
+        threshold: 0.1,
       }
     );
 
     if (loaderRef.current) {
       observer.observe(loaderRef.current);
-      console.log('Observer attached to loader element');
     }
 
     return () => {
       if (loaderRef.current) {
         observer.unobserve(loaderRef.current);
-        console.log('Observer detached from loader element');
       }
     };
   }, [hasMore, isFetchingMore]);

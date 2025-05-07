@@ -26,7 +26,9 @@ const Login = () => {
       const data = await response.json();
       if (response.ok) {
         localStorage.setItem('access_token', data.access);
-        navigate('/'); // Redirect to feed page after successful login
+        // Trigger storage event for App.js to detect
+        window.dispatchEvent(new Event('storage'));
+        navigate('/feed'); // Redirect directly to feed page after successful login
       } else {
         setError('Invalid credentials');
       }
@@ -36,7 +38,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center px-4">
       <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h2 className="text-4xl font-bold text-gray-800 mb-2 relative inline-block">
