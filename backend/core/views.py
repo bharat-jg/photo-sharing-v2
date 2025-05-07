@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from django.contrib.auth.models import User
 from .models import Bookmark, Photo, Comment, Like
-from .serializers import UserSerializer, PhotoSerializer, CommentSerializer, UserProfileSerializer
+from .serializers import ProfileSerializer, UserSerializer, PhotoSerializer, CommentSerializer, UserProfileSerializer
 from django.db.models import Count
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes, force_str
@@ -258,3 +258,34 @@ def saved_photos(request):
     serializer = PhotoSerializer(photos, many=True, context={"request": request})
     return Response(serializer.data)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_profile_photo(request):
+    if 'profile_photo' not in request.FILES:
+        return Response({'error': 'No photo provided'}, status=400)
+    
+    try:
+        profile = request.user.profile
+        profile.profile_photo = request.FILES['profile_photo']
+        profile.save()
+        
+        return Response({
+            'message': 'Profile photo updated successfully',
+            'profile_photo': profile.profile_photo.url
+        })
+    except Exception as e:
+        print('Error:', str(e))  # For debugging
+        return Response({'error': str(e)}, status=400)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_profile_photo(request):
+    try:
+        profile = request.user.profile
+        profile.profile_photo = None
+        profile.save()
+        return Response({'message': 'Profile photo removed successfully'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
