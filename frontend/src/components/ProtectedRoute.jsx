@@ -2,11 +2,12 @@ import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = () => {
-    return localStorage.getItem('access_token') !== null;
+    const token = localStorage.getItem('access_token');
+    return token !== null && token !== '' && token !== 'undefined';
   };
 
   if (!isAuthenticated()) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
   return children;
 };

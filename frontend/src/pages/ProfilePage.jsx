@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { PencilIcon, XIcon, CheckIcon, Camera, Trash2 } from 'lucide-react';
+import {
+  PencilIcon,
+  XIcon,
+  CheckIcon,
+  Camera,
+  Trash2,
+  User,
+} from 'lucide-react';
 import { PhotoCard } from './Feed';
 import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import UserProfileSkeleton from '../components/skeletons/UserProfileSkeleton';
+import { DefaultAvatar } from '../components/DefaultAvatar';
+
 
 export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -287,9 +296,19 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
+    // Clear all local state first
+    setUserData(null);
+    setOriginalUserData(null);
+    setPhotos([]);
+    setSavedPhotos([]);
+    setFieldValues({});
 
-    navigate('/login');
+    // Remove token and trigger auth state update
+    localStorage.removeItem('access_token');
+    window.dispatchEvent(new Event('storage'));
+
+    // Navigate after cleanup
+    navigate('/login', { replace: true });
   };
 
   if (isLoading || !userData || isPhotoLoading) return <UserProfileSkeleton />;
@@ -302,14 +321,15 @@ export default function ProfilePage() {
       <div className="p-8 mt-5">
         <div className="flex items-center space-x-8  mb-8">
           <div className="rounded-full w-32 h-32 border-3 border-pink-400 overflow-hidden shadow-lg relative group">
-            <img
-              src={
-                profile_photo ||
-                'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
-              }
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
+            {profile_photo ? (
+              <img
+                src={profile_photo}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <DefaultAvatar size="lg" />
+            )}
             <label className="absolute inset-0 bg-gray-400 bg-opacity-50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity duration-200">
               <input
                 type="file"

@@ -16,6 +16,7 @@ import { PhotoCard } from './Feed';
 import LikeButton from '../components/LikeButton';
 import SaveButton from '../components/SaveButton';
 import { motion } from 'framer-motion';
+import { DefaultAvatar } from '../components/DefaultAvatar';
 
 const DEFAULT_PROFILE_PHOTO =
   'https://cdn-icons-png.freepik.com/256/6994/6994705.png';
@@ -69,48 +70,6 @@ const formatRelativeTime = (dateString) => {
   }
 };
 
-// SearchBar component (reused from previous pages)
-export const SearchBar = () => {
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const recentSearches = [];
-
-  return (
-    <div className="relative w-full max-w-xl">
-      <div className="relative">
-        <input
-          type="text"
-          placeholder="Search photos, people, or collections"
-          className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onFocus={() => setIsSearchFocused(true)}
-          onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
-      </div>
-
-      {/* TODO: add recent searches from api */}
-      {recentSearches.length > 0 && isSearchFocused && (
-        <div className="absolute mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
-          <p className="px-4 py-1 text-sm text-gray-500">Recent Searches</p>
-          {recentSearches.map((search, index) => (
-            <div
-              key={index}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
-              onClick={() => setSearchQuery(search)}
-            >
-              <Search size={16} className="mr-2 text-gray-500" />
-              <span>{search}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
 // Comment component
 const Comment = ({ comment, comments, setComments, postUserId }) => {
   const [isLiked, setIsLiked] = useState(false);
@@ -143,15 +102,16 @@ const Comment = ({ comment, comments, setComments, postUserId }) => {
       className="mb-6"
     >
       <div className="flex group">
-        <img
-          src={getProfilePhotoUrl(comment.user?.profile?.profile_photo)}
-          alt={`${comment.user?.username || 'User'}'s profile`}
-          className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
-          onError={(e) => {
-            e.target.src = DEFAULT_PROFILE_PHOTO;
-          }}
-          loading="lazy"
-        />
+        {comment.user?.profile?.profile_photo ? (
+          <img
+            src={getProfilePhotoUrl(comment.user.profile.profile_photo)}
+            alt={`${comment.user?.username || 'User'}'s profile`}
+            className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
+            loading="lazy"
+          />
+        ) : (
+          <DefaultAvatar size="md" className="mr-4 shadow-md" />
+        )}
         <div className="flex-1">
           <div className="bg-gray-50 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center justify-between mb-1">
@@ -301,14 +261,16 @@ const ShareModal = ({ isOpen, onClose, post }) => {
 
         <div className="space-y-6">
           <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-            <img
-              src={
-                post.user.profile_photo ||
-                'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
-              }
-              alt={post.user.username}
-              className="w-12 h-12 rounded-xl object-cover shadow-md"
-            />
+            {post.user?.profile?.profile_photo ? (
+              <img
+                src={getProfilePhotoUrl(post.user.profile.profile_photo)}
+                alt={`${post.user?.username || 'User'}'s profile`}
+                className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
+                loading="lazy"
+              />
+            ) : (
+              <DefaultAvatar size="md" className="mr-4 shadow-md" />
+            )}
             <div>
               <p className="font-medium text-gray-900">
                 {post.user.first_name} {post.user.last_name}
@@ -591,17 +553,18 @@ const PhotoDetail = () => {
                   <div className="p-6 border-b border-gray-100">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <img
-                          src={getProfilePhotoUrl(
-                            post.user?.profile?.profile_photo
-                          )}
-                          alt={`${post.user?.username || 'User'}'s profile`}
-                          className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
-                          onError={(e) => {
-                            e.target.src = DEFAULT_PROFILE_PHOTO;
-                          }}
-                          loading="lazy"
-                        />
+                        {post.user?.profile?.profile_photo ? (
+                          <img
+                            src={getProfilePhotoUrl(
+                              post.user.profile.profile_photo
+                            )}
+                            alt={`${post.user?.username || 'User'}'s profile`}
+                            className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <DefaultAvatar size="md" className="mr-4 shadow-md" />
+                        )}
                         <div>
                           <h3 className="font-semibold text-gray-800">
                             {post.first_name} {post.last_name}
@@ -761,7 +724,7 @@ const PhotoDetail = () => {
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-semibold relative inline-block">
                     <span className="relative z-10">Comments</span>
-                    <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-200 opacity-50"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-2 bg-pink-500 opacity-30 transform -rotate-1"></div>
                   </h3>
                   <span className="text-sm text-gray-500">
                     {comments.length}{' '}
@@ -771,15 +734,16 @@ const PhotoDetail = () => {
 
                 {/* Comment Input */}
                 <div className="flex mb-6">
-                  <img
-                    src={getProfilePhotoUrl(post.user?.profile?.profile_photo)}
-                    alt={`${post.user?.username || 'User'}'s profile`}
-                    className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
-                    onError={(e) => {
-                      e.target.src = DEFAULT_PROFILE_PHOTO;
-                    }}
-                    loading="lazy"
-                  />
+                  {post.user?.profile?.profile_photo ? (
+                    <img
+                      src={getProfilePhotoUrl(post.user.profile.profile_photo)}
+                      alt={`${post.user?.username || 'User'}'s profile`}
+                      className="w-12 h-12 rounded-full object-cover shadow-md mr-4"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <DefaultAvatar size="md" className="mr-4 shadow-md" />
+                  )}{' '}
                   <div className="flex-1">
                     <textarea
                       ref={textareaRef}
@@ -828,7 +792,7 @@ const PhotoDetail = () => {
                 <span className="relative z-10">
                   More from @{post.user.username}
                 </span>
-                <div className="absolute -bottom-2 left-0 w-full h-3 bg-pink-500 opacity-30 transform -rotate-1"></div>
+                <div className="absolute -bottom-1 left-0 w-full h-3 bg-pink-500 opacity-30 transform -rotate-1"></div>
               </h3>
               {/* Photos Grid with enhanced styling */}
               <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-3.5">
