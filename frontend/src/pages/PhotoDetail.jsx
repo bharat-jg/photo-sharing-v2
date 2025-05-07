@@ -15,6 +15,7 @@ import { getCurrentUserId } from '../utils/auth';
 import { PhotoCard } from './Feed';
 import LikeButton from '../components/LikeButton';
 import SaveButton from '../components/SaveButton';
+import { motion } from 'framer-motion';
 
 // Format relative time
 const formatRelativeTime = (dateString) => {
@@ -84,7 +85,6 @@ export const SearchBar = () => {
 // Comment component
 const Comment = ({ comment, comments, setComments, postUserId }) => {
   const [isLiked, setIsLiked] = useState(false);
-
   const currentUserId = getCurrentUserId();
 
   const handleDeleteComment = async (commentId) => {
@@ -100,8 +100,6 @@ const Comment = ({ comment, comments, setComments, postUserId }) => {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      // Remove the deleted comment from the list of comments
       setComments(comments.filter((comment) => comment.id !== commentId));
     } catch (error) {
       console.error('Error deleting comment:', error);
@@ -110,42 +108,62 @@ const Comment = ({ comment, comments, setComments, postUserId }) => {
   };
 
   return (
-    <div className="mb-6">
-      <div className="flex">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-6"
+    >
+      <div className="flex group">
         <img
-          src="https://cdn-icons-png.freepik.com/256/6994/6994705.png?ga=GA1.1.1704611719.1745213202&semt=ais_hybrid"
+          src="https://cdn-icons-png.freepik.com/256/6994/6994705.png"
           alt={comment.user.username}
-          className="w-8 h-8 rounded-full mr-3"
+          className="w-8 h-8 rounded-full mr-3 shadow-sm transition-transform duration-200 group-hover:scale-105"
         />
         <div className="flex-1">
-          <div className="bg-gray-50 rounded-lg px-4 py-3">
+          <div className="bg-gray-50 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center justify-between mb-1">
-              <div>
-                <span className="font-medium text-gray-900">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-900 hover:text-pink-600 transition-colors duration-200">
                   {comment.user.first_name} {comment.user.last_name}
                 </span>
-                <span className="text-gray-500 text-sm ml-2">
+                <span className="text-gray-500 text-sm">
                   @{comment.user.username}
                 </span>
               </div>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 font-medium">
                 {formatRelativeTime(comment.created_at)}
               </span>
             </div>
             <p className="text-gray-800">{comment.text}</p>
             {(comment.user.id === currentUserId ||
               postUserId === currentUserId) && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => handleDeleteComment(comment.id)}
-                className="text-red-500 text-xs mt-2"
+                className="mt-2 text-red-500 text-xs font-medium hover:text-red-600 
+                         transition-colors duration-200 flex items-center gap-1"
               >
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  strokeWidth="2"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
                 Delete
-              </button>
+              </motion.button>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -216,33 +234,53 @@ const ShareModal = ({ isOpen, onClose, post }) => {
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div ref={modalRef} className="bg-white rounded-xl w-full max-w-md p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">Share</h3>
-          <button
+      <motion.div
+        ref={modalRef}
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ type: 'spring', duration: 0.3 }}
+        className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-md p-6 shadow-xl"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-800 relative inline-block">
+            <span className="relative z-10">Share Photo</span>
+            <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-500 opacity-30"></div>
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100"
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
           >
-            <X size={20} />
-          </button>
+            <X size={20} className="text-gray-500" />
+          </motion.button>
         </div>
 
-        <div className="mb-6">
-          <div className="flex items-center space-x-3 mb-4">
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
             <img
-              src="https://cdn-icons-png.freepik.com/256/6994/6994705.png?ga=GA1.1.1704611719.1745213202&semt=ais_hybrid"
-              alt={post.caption}
-              className="w-8 h-8 rounded-lg object-cover"
+              src={
+                post.user.profile_photo ||
+                'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
+              }
+              alt={post.user.username}
+              className="w-12 h-12 rounded-xl object-cover shadow-md"
             />
             <div>
-              {/* <h4 className="font-medium">{post.user.username}</h4> */}
-              <p className="text-sm  text-gray-500">by @{post.user.username}</p>
+              <p className="font-medium text-gray-900">
+                {post.user.first_name} {post.user.last_name}
+              </p>
+              <p className="text-sm text-gray-500">@{post.user.username}</p>
             </div>
           </div>
 
@@ -251,23 +289,26 @@ const ShareModal = ({ isOpen, onClose, post }) => {
               type="text"
               value={`http://localhost:5173/photos/${post.id}`}
               readOnly
-              className="w-full pl-4 pr-20 py-2 bg-gray-100 rounded-lg focus:outline-none"
+              className="w-full pl-4 pr-24 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 border border-gray-200"
             />
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleCopyLink}
-              className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-sm px-3 py-1 rounded-full cursor-pointer ${
-                copied ? 'bg-green-500 text-white' : 'bg-blue-600 text-white'
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-1.5 rounded-full transition-all duration-200 ${
+                copied
+                  ? 'bg-green-500 text-white'
+                  : 'bg-pink-600 text-white hover:bg-pink-700'
               }`}
             >
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
+              {copied ? 'Copied!' : 'Copy Link'}
+            </motion.button>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
-
 // Main Post Page component
 const PhotoDetail = () => {
   const [isOwner, setIsOwner] = useState(false); // Ensured this is top-level hook
@@ -487,246 +528,285 @@ const PhotoDetail = () => {
             </button>
           </div>
 
-          {/* Main Content Card */}
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
-            <div className="md:flex">
-              {/* Image Section */}
-              <div className="md:w-2/3 relative">
-                <div className="relative aspect-[4/3] bg-gray-50">
-                  <img
-                    src={
-                      post.image.startsWith('https://')
-                        ? post.image
-                        : `https://${post.image.split('https://')[1]}`
-                    }
-                    alt={post.caption}
-                    className="w-full h-full object-contain"
-                  />
-                  <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white 
-                             hover:bg-black/70 transition-colors duration-200"
-                  >
-                    <Expand size={20} className="text-white" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Details Section */}
-              <div className="md:w-1/3 border-l border-gray-100">
-                {/* User Info */}
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex items-center">
+          <div className="grid grid-cols-1 gap-6">
+            {/* Main Image Card */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="flex flex-col md:flex-row">
+                {/* Left Side - Image */}
+                <div className="md:w-2/3 relative">
+                  <div className="relative aspect-[4/3] bg-gray-50">
                     <img
                       src={
-                        post.user.profile_photo ||
-                        'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
+                        post.image.startsWith('https://')
+                          ? post.image
+                          : `https://${post.image.split('https://')[1]}`
                       }
-                      alt={post.user.username}
-                      className="w-12 h-12 rounded-full mr-4"
+                      alt={post.caption}
+                      className="absolute inset-0 w-full h-full object-contain"
                     />
-                    <div>
-                      <h3 className="font-semibold text-gray-800">
-                        {post.first_name} {post.last_name}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        @{post.user.username}
-                      </p>
-                    </div>
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors duration-200"
+                    >
+                      <Expand size={20} className="text-white" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Caption Section */}
-                <div className="px-6 py-4 border-b border-gray-100">
-                  {isEditing ? (
-                    <div className="my-4">
-                      <textarea
-                        value={newCaption}
-                        onChange={(e) => setNewCaption(e.target.value)}
-                        className="w-full min-h-20 max-h-50 p-3 border rounded-lg focus:ring-2 
-                                 focus:ring-pink-500 focus:border-transparent"
-                      />
-                      <div className="flex gap-3 mt-3">
+                {/* Right Side - Info & Actions */}
+                <div className="md:w-1/3 flex flex-col">
+                  {/* User Info Header */}
+                  <div className="p-6 border-b border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <img
+                          src={
+                            post.user.profile_photo ||
+                            'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
+                          }
+                          alt={post.user.username}
+                          className="w-12 h-12 rounded-full mr-4"
+                        />
+                        <div>
+                          <h3 className="font-semibold text-gray-800">
+                            {post.first_name} {post.last_name}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            @{post.user.username}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {formatRelativeTime(
+                          new Date(post.created_at).toLocaleString()
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Caption Section */}
+                  <div className="p-6 pt-2 border-b border-gray-100 flex-grow">
+                    {isEditing ? (
+                      <div className="space-y-4">
+                        <textarea
+                          value={newCaption}
+                          onChange={(e) => setNewCaption(e.target.value)}
+                          className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                          rows={3}
+                          placeholder="Write a caption..."
+                        />
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => setIsEditing(false)}
+                            className="px-4 py-2 text-gray-600 hover:text-gray-700 transition-colors duration-200"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={submitCaptionEdit}
+                            className="px-6 py-2 bg-pink-600 text-white rounded-full hover:bg-pink-700 transition-colors duration-200"
+                          >
+                            Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="text-gray-800">
+                          <p className="text-gray-400 italic">caption</p>{' '}
+                          {post.caption}
+                        </div>
+                        {isOwner && (
+                          <div className="flex gap-3">
+                            <button
+                              onClick={handleEdit}
+                              className="text-pink-600 text-sm hover:text-pink-700 transition-colors duration-200 flex items-center gap-1"
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                />
+                              </svg>
+                              Edit
+                            </button>
+                            <button
+                              onClick={handleDeletePost}
+                              className="text-red-500 text-sm hover:text-red-600 transition-colors duration-200 flex items-center gap-1"
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="p-6 border-t border-gray-100 mt-auto">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <LikeButton
+                          photoId={post.id}
+                          isLiked={isPostLiked}
+                          likeCount={post.likes_count}
+                          onLikeChange={async () => {
+                            const res = await axios.get(
+                              `http://localhost:8000/api/photos/${post.id}/`
+                            );
+                            setPost(res.data);
+                          }}
+                        />
                         <button
-                          onClick={submitCaptionEdit}
-                          className="px-4 py-2 bg-pink-600 text-white rounded-full 
-                                   hover:bg-pink-700 transition-colors duration-200"
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                          onClick={focusCommentInput}
                         >
-                          Save
+                          <MessageCircle size={20} className="text-gray-700" />
                         </button>
                         <button
-                          onClick={() => setIsEditing(false)}
-                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full 
-                                   hover:bg-gray-300 transition-colors duration-200"
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                          onClick={() => setIsShareModalOpen(true)}
                         >
-                          Cancel
+                          <Share2 size={20} className="text-gray-700" />
                         </button>
                       </div>
+                      <div className="flex items-center space-x-3">
+                        <SaveButton
+                          photoId={post.id}
+                          isSaved={isPostSaved}
+                          onSaveChange={async () => {
+                            const res = await axios.get(
+                              `http://localhost:8000/api/photos/${post.id}/`
+                            );
+                            setPost(res.data);
+                          }}
+                        />
+                        <motion.button
+                          onClick={() =>
+                            handleDownloadImage(
+                              post.image.replace(/^image\/upload\//, '')
+                            )
+                          }
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="text-pink-500 p-2 rounded-full font-medium hover:bg-pink-50 transition-all duration-200"
+                        >
+                          <Download size={18} />
+                        </motion.button>
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-lg text-gray-800">{post.caption}</p>
-                  )}
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-sm text-gray-500">
-                      {formatRelativeTime(
-                        new Date(post.created_at).toLocaleString()
-                      )}
-                    </span>
-                    {isOwner && (
-                      <div className="flex gap-3">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Comments Section as a separate full-width card */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-semibold relative inline-block">
+                    <span className="relative z-10">Comments</span>
+                    <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-200 opacity-50"></div>
+                  </h3>
+                  <span className="text-sm text-gray-500">
+                    {comments.length}{' '}
+                    {comments.length === 1 ? 'comment' : 'comments'}
+                  </span>
+                </div>
+
+                {/* Comment Input */}
+                <div className="flex mb-6">
+                  <img
+                    src={
+                      post.user.profile_photo ||
+                      'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
+                    }
+                    alt="Your profile"
+                    className="w-10 h-10 rounded-full mr-4"
+                  />
+                  <div className="flex-1">
+                    <textarea
+                      ref={textareaRef}
+                      placeholder="Add a comment..."
+                      className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                      rows={2}
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                    ></textarea>
+                    {commentText.trim() && (
+                      <div className="flex justify-end mt-2">
                         <button
-                          onClick={handleEdit}
-                          className="text-pink-600 text-sm hover:text-pink-700 
-                                   transition-colors duration-200"
+                          className="bg-pink-600 text-white px-6 py-2.5 rounded-full hover:bg-pink-700 transition-colors duration-200"
+                          onClick={handlePostComment}
                         >
-                          Edit
-                        </button>
-                        <button
-                          onClick={handleDeletePost}
-                          className="text-red-500 text-sm hover:text-red-600 
-                                   transition-colors duration-200"
-                        >
-                          Delete
+                          Post Comment
                         </button>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Actions Section */}
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <LikeButton
-                        photoId={post.id}
-                        isLiked={isPostLiked}
-                        likeCount={post.likes_count}
-                        onLikeChange={async () => {
-                          const res = await axios.get(
-                            `http://localhost:8000/api/photos/${post.id}/`
-                          );
-                          setPost(res.data);
-                        }}
-                      />
-                      <button
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
-                        onClick={focusCommentInput}
-                      >
-                        <MessageCircle size={20} className="text-gray-700" />
-                      </button>
-                      <button
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
-                        onClick={() => setIsShareModalOpen(true)}
-                      >
-                        <Share2 size={20} className="text-gray-700" />
-                      </button>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <SaveButton
-                        photoId={post.id}
-                        isSaved={isPostSaved}
-                        onSaveChange={async () => {
-                          const res = await axios.get(
-                            `http://localhost:8000/api/photos/${post.id}/`
-                          );
-                          setPost(res.data);
-                        }}
-                      />
-                      <button
-                        onClick={() =>
-                          handleDownloadImage(
-                            post.image.replace(/^image\/upload\//, '')
-                          )
-                        }
-                        className="p-2 rounded-full bg-pink-600 text-white 
-                                 hover:bg-pink-700 transition-colors duration-200"
-                      >
-                        <Download size={20} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Comments Section */}
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-semibold relative inline-block">
-                      <span className="relative z-10">Comments</span>
-                      <div className="absolute -bottom-1 left-0 w-full h-2 bg-pink-200 opacity-50"></div>
-                    </h3>
-                    <button
-                      className="text-gray-500 hover:text-pink-600 transition-colors duration-200"
-                      onClick={() => setShowComments((prev) => !prev)}
-                    >
-                      {showComments ? 'Hide comments' : 'Show comments'}
-                    </button>
-                  </div>
-
-                  {/* Comment Input */}
-                  <div className="flex mb-6">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 mr-3"></div>
-                    <div className="flex-1">
-                      <textarea
-                        ref={textareaRef}
-                        placeholder="Add a comment..."
-                        className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 
-                                 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
-                        rows={2}
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                      ></textarea>
-                      {commentText.trim() && (
-                        <div className="flex justify-end mt-2">
-                          <button
-                            className="bg-pink-600 text-white px-6 py-2 rounded-full 
-                                     hover:bg-pink-700 transition-colors duration-200"
-                            onClick={handlePostComment}
-                          >
-                            Post
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Comments List */}
-                  {showComments && (
-                    <div className="space-y-4">
-                      {comments.map((comment) => (
-                        <Comment
-                          key={comment.id}
-                          comments={comments}
-                          setComments={setComments}
-                          comment={comment}
-                          postUserId={post.user.id}
-                        />
-                      ))}
-                    </div>
+                {/* Comments List */}
+                <div className="space-y-6">
+                  {comments.map((comment) => (
+                    <Comment
+                      key={comment.id}
+                      comments={comments}
+                      setComments={setComments}
+                      comment={comment}
+                      postUserId={post.user.id}
+                    />
+                  ))}
+                  {comments.length === 0 && (
+                    <p className="text-center text-gray-500 py-6">
+                      No comments yet. Be the first to comment!
+                    </p>
                   )}
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* More Photos Section */}
-          <div className="mt-12">
-            <h3 className="text-2xl font-bold mb-6 relative inline-block">
-              <span className="relative z-10">
-                More from @{post.user.username}
-              </span>
-              <div className="absolute -bottom-2 left-0 w-full h-3 bg-pink-500 opacity-30 transform -rotate-1"></div>
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {photos
-                .filter((photo) => photo.id !== post.id)
-                .map((photo) => (
-                  <PhotoCard
-                    key={photo.id}
-                    photo={photo}
-                    isLiked={isPostLiked}
-                    onClick={() => navigate(`/photos/${photo.id}`)}
-                  />
-                ))}
+            {/* More Photos Section */}
+            <div className="mt-12">
+              <h3 className="text-2xl font-bold mb-6 relative inline-block">
+                <span className="relative z-10">
+                  More from @{post.user.username}
+                </span>
+                <div className="absolute -bottom-2 left-0 w-full h-3 bg-pink-500 opacity-30 transform -rotate-1"></div>
+              </h3>
+              {/* Photos Grid with enhanced styling */}
+              <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-3.5">
+                {photos
+                  .filter((photo) => photo.id !== post.id)
+                  .map((photo) => (
+                    <PhotoCard
+                      key={photo.id}
+                      photo={photo}
+                      isLiked={isPostLiked}
+                      onClick={() => navigate(`/photos/${photo.id}`)}
+                    />
+                  ))}
+              </div>
             </div>
           </div>
         </div>

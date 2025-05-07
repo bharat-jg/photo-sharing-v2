@@ -9,8 +9,8 @@ const LandingPage = () => {
             Share Your Moments
           </h1>
           <p className="text-xl text-white mb-12 max-w-2xl">
-            Join our community and share your most precious moments with friends
-            and family. Create memories that last forever.
+            Join our community and share your most precious moments with other
+            people. Create memories that last forever.
           </p>
           <div className="space-x-6">
             <Link
