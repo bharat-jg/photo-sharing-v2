@@ -1,5 +1,6 @@
 import { Heart } from 'lucide-react';
 import axios from 'axios';
+import { motion } from 'framer-motion';
 import { formatLikeCount } from '../utils/formatLikeCount';
 
 const LikeButton = ({ photoId, isLiked, likeCount, onLikeChange }) => {
@@ -28,19 +29,42 @@ const LikeButton = ({ photoId, isLiked, likeCount, onLikeChange }) => {
   };
 
   return (
-    <button
+    <motion.button
       onClick={handleToggleLike}
-      className="flex items-center gap-1 transition-all hover:scale-105 hover:opacity-80"
-      title="Like this photo"
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.95 }}
+      className={`relative flex items-center gap-2 p-2 rounded-full transition-all duration-200
+                ${
+                  isLiked
+                    ? 'bg-pink-50 text-pink-500'
+                    : 'bg-gray-100 text-gray-600 hover:bg-pink-50 hover:text-pink-500'
+                }`}
+      title={isLiked ? 'Unlike photo' : 'Like photo'}
     >
-      {/* {isLiked ? 'Unlike' : 'Like'} */}
-      {isLiked ? (
-        <Heart fill="red" color="red" className="w-5 h-5" />
-      ) : (
-        <Heart className="w-5 h-5 text-gray-600" />
+      <motion.div
+        initial={false}
+        animate={{ scale: isLiked ? 1 : 0.8 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      >
+        <Heart
+          fill={isLiked ? 'currentColor' : 'none'}
+          className="w-5 h-5"
+          strokeWidth={2}
+        />
+      </motion.div>
+
+      <span className="text-sm font-medium">{formatLikeCount(likeCount)}</span>
+
+      {/* Ripple effect on like */}
+      {isLiked && (
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0.5 }}
+          animate={{ scale: 1.2, opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="absolute inset-0 rounded-full bg-pink-400"
+        />
       )}
-      <span className="text-sm">{formatLikeCount(likeCount)}</span>
-    </button>
+    </motion.button>
   );
 };
 

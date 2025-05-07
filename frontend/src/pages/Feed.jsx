@@ -12,7 +12,7 @@ export const PhotoCard = ({ photo, onClick }) => {
 
   return (
     <div
-      className="relative mb-4 rounded-lg overflow-hidden cursor-pointer"
+      className="relative mb-4 rounded-xl overflow-hidden cursor-pointer group transform transition-transform duration-300 hover:scale-[1.02] hover:shadow-xl"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
@@ -20,30 +20,46 @@ export const PhotoCard = ({ photo, onClick }) => {
       <img
         src={photo.image.replace(/^image\/upload\//, '')}
         alt={photo.caption}
-        className="w-full h-auto object-cover"
+        className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
       />
 
-      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white">
+      {/* Always visible overlay with user info and likes */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-6 h-6 rounded-full bg-gray-300 mr-2"></div>
-            <span className="text-sm font-medium">{photo.user.username}</span>
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm p-0.5">
+              <img
+                src={
+                  photo.user.profile_photo ||
+                  'https://cdn-icons-png.freepik.com/256/6994/6994705.png'
+                }
+                alt={photo.user.username}
+                className="w-full h-full rounded-full object-cover"
+              />
+            </div>
+            <span className="text-white font-medium text-sm">
+              {photo.user.username}
+            </span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
             <Heart
-              fill={isLikedByCurrentUser ? 'red' : 'none'}
-              color={isLikedByCurrentUser ? 'red' : 'white'}
-              size={16}
-              className="mr-1"
+              size={14}
+              fill={isLikedByCurrentUser ? '#ec4899' : 'none'}
+              color={isLikedByCurrentUser ? '#ec4899' : 'white'}
+              className="transition-colors duration-200"
             />
-            <span className="text-xs">{photo.likes_count}</span>
+            <span className="text-white text-xs font-medium">
+              {photo.likes_count}
+            </span>
           </div>
         </div>
       </div>
 
-      {hovered && (
-        <div className="absolute inset-0 bg-black/40 transition-opacity duration-200"></div>
-      )}
+      {/* Hover overlay for additional effect */}
+      <div
+        className={`absolute inset-0 bg-black/10 transition-opacity duration-300
+                   opacity-0 group-hover:opacity-100`}
+      />
     </div>
   );
 };
@@ -83,7 +99,7 @@ export default function Feed() {
           </div>
 
           {/* Photos Grid with enhanced styling */}
-          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-8">
+          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-3.5">
             {photos.map((photo) => (
               <PhotoCard
                 key={photo.id}
