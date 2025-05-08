@@ -189,7 +189,7 @@ GET  /api/photos/saved/                # List saved photos
 
 ### Architecure
 
-![mermaid-architecture-1](https://github.com/user-attachments/assets/8c9f9040-64c7-41b8-8a58-cedfdf0946f5)
+![mermaid-architecture-1](https://github.com/user-attachments/assets/23501e47-0e67-4b57-839f-ac837de896d9)
  
 
 ### Upload Photo Flow
