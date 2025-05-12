@@ -24,7 +24,7 @@ def register_user(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+# Phot Feed with pagination
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def photo_feed(request):
@@ -35,13 +35,13 @@ def photo_feed(request):
     return paginator.get_paginated_response(serializer.data)
 
 
-# Photo feed and create
+# Photo feed with filtering and sorting and post creation
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticatedOrReadOnly])
 def photo_list_create(request):
     if request.method == 'GET':
         user_id = request.GET.get('user_id')
-        sort_by = request.GET.get('sort_by', 'recent')  # default to 'recent'
+        sort_by = request.GET.get('sort_by', 'recent')  
 
         if user_id:
             photos = Photo.objects.filter(user__id=user_id)
@@ -145,13 +145,7 @@ def like_toggle(request, photo_id):
         return Response({"status": "unliked"})
     return Response({"status": "liked"})
 
-
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def current_user_profile(request):
-#     serializer = UserProfileSerializer(request.user)
-#     return Response(serializer.data)
-
+# Password reset request 
 @api_view(['POST'])
 @permission_classes([AllowAny])  
 def password_reset_request(request):
@@ -163,7 +157,7 @@ def password_reset_request(request):
         user = User.objects.get(email=email)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        frontend_base = "http://localhost:5173"  # or your deployed frontend URL
+        frontend_base = "http://localhost:5173"  
         reset_url = f"{frontend_base}/reset-password/{uid}/{token}/"
 
         send_mail(
@@ -173,11 +167,11 @@ def password_reset_request(request):
             recipient_list=[user.email],
         )
     except User.DoesNotExist:
-        pass  # Don't reveal if the user exists
+        pass  
 
     return JsonResponse({'message': 'If an account with that email exists, a reset link has been sent.'})
 
-
+# Password reset confirm
 @api_view(['POST'])
 @permission_classes([AllowAny])  
 def password_reset_confirm(request, uidb64, token):
@@ -199,7 +193,7 @@ def password_reset_confirm(request, uidb64, token):
     except (User.DoesNotExist, ValueError, TypeError):
         return JsonResponse({'error': 'Invalid request'}, status=400)
 
-
+# User Details in Profile Page
 @api_view(['GET', 'PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def current_user_profile(request):
@@ -233,8 +227,7 @@ def change_password(request):
     user.save()
     return Response({"detail": "Password updated successfully"})
 
-
-# views.py
+# Save/Unsaved photos
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def save_toggle(request, photo_id):
@@ -249,7 +242,7 @@ def save_toggle(request, photo_id):
         return Response({"status": "unsaved"})
     return Response({"status": "saved"})
 
-
+# Get saved photos
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def saved_photos(request):
@@ -258,7 +251,7 @@ def saved_photos(request):
     serializer = PhotoSerializer(photos, many=True, context={"request": request})
     return Response(serializer.data)
 
-
+# Update profile photo
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def update_profile_photo(request):
@@ -278,7 +271,7 @@ def update_profile_photo(request):
         print('Error:', str(e))  # For debugging
         return Response({'error': str(e)}, status=400)
 
-
+# Delete profile photo
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_profile_photo(request):

@@ -5,7 +5,7 @@ from cloudinary.models import CloudinaryField
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-
+# The Profile model represents a user's profile, including their bio and profile photo.
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     bio = models.TextField(blank=True)
@@ -22,7 +22,7 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
     instance.profile.save()
 
-
+# The Photo model represents a photo uploaded by a user.
 class Photo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="photos")
     caption = models.TextField(blank=True)
@@ -32,7 +32,7 @@ class Photo(models.Model):
     def __str__(self):
         return f"Photo by {self.user.username}"
 
-
+# The Comment model represents a comment made by a user on a photo.
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     photo = models.ForeignKey(Photo, on_delete=models.CASCADE, related_name="comments")
@@ -42,7 +42,7 @@ class Comment(models.Model):
     def __str__(self):
         return f"Comment by {self.user.username} on Photo {self.photo.id}"
 
-
+# The Like model represents a like made by a user on a photo.
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="likes")
     photo = models.ForeignKey(Photo, on_delete=models.CASCADE, related_name="likes")
@@ -54,7 +54,7 @@ class Like(models.Model):
     def __str__(self):
         return f"{self.user.username} liked Photo {self.photo.id}"
 
-
+# The Bookmark model represents a saved photo by a user.
 class Bookmark(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookmarks')
     photo = models.ForeignKey('Photo', on_delete=models.CASCADE, related_name='bookmarks')

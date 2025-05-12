@@ -6,10 +6,11 @@ import { getCurrentUserId } from '../utils/auth';
 import FeedSkeleton from '../components/skeletons/FeedSkeleton';
 import { DefaultAvatar } from '../components/DefaultAvatar';
 
+// This component displays a photo card with user info and likes
 export const PhotoCard = ({ photo, onClick }) => {
   const DEFAULT_PROFILE_PHOTO =
     'https://cdn-icons-png.freepik.com/256/6994/6994705.png';
-  const CLOUDINARY_BASE_URL = 'https://res.cloudinary.com/daz3cgmrp'; // Replace with your cloud name
+  const CLOUDINARY_BASE_URL = 'https://res.cloudinary.com/daz3cgmrp';
 
   const [hovered, setHovered] = useState(false);
   const currentUserId = getCurrentUserId();
@@ -91,6 +92,7 @@ export const PhotoCard = ({ photo, onClick }) => {
   );
 };
 
+// This component fetches and displays a feed of photos
 export default function Feed() {
   const INITIAL_LIMIT = 7;
   const SCROLL_LIMIT = 6;

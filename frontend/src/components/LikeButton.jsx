@@ -3,6 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { formatLikeCount } from '../utils/formatLikeCount';
 
+// This component is a button that allows users to like or unlike a photo.
 const LikeButton = ({ photoId, isLiked, likeCount, onLikeChange }) => {
   const token = localStorage.getItem('access_token');
 

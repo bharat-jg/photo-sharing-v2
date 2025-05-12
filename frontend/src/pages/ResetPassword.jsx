@@ -25,7 +25,7 @@ export default function ResetPassword() {
       setPasswordError(
         'Password must be at least 8 characters and include a capital letter, number, and special character.'
       );
-      setIsLoading(false); // Add this line to reset loading state
+      setIsLoading(false); 
       return;
     }
 
@@ -39,7 +39,6 @@ export default function ResetPassword() {
         setPasswordError(null);
         setPasswordSuccess('Password reset successfully!');
 
-        // Only navigate on success
         setTimeout(() => {
           setIsLoading(false);
           navigate('/login');
@@ -49,7 +48,7 @@ export default function ResetPassword() {
       setPasswordError(
         error.response?.data?.error || 'Something went wrong. Try again.'
       );
-      setIsLoading(false); // Add this line to reset loading state on error
+      setIsLoading(false); 
     }
   };
 

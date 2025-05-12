@@ -19,23 +19,21 @@ const UploadPhoto = () => {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setError(''); // Clear any previous errors
+    setError(''); 
 
     if (file) {
-      const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+      const maxSize = 2 * 1024 * 1024; 
 
       if (file.size > maxSize) {
         setError('File size must be less than 2MB');
         return;
       }
 
-      // Check file type
       if (!file.type.startsWith('image/')) {
         setError('Please upload an image file');
         return;
       }
 
-      // If validations pass, set the image
       setImage(file);
       setImagePreview(URL.createObjectURL(file));
     }
