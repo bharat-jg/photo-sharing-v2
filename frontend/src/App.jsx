@@ -12,7 +12,6 @@ import UploadPhoto from './pages/UploadPhoto';
 import './index.css';
 import ForgotPassword from './pages/ForgotPassword';
 import PhotoDetail from './pages/PhotoDetail';
-import Explore from './pages/explore';
 import ProfilePage from './pages/ProfilePage';
 import Layout from './pages/Layout';
 import ResetPassword from './pages/ResetPassword';
@@ -33,7 +32,7 @@ function App() {
     setIsAuth(checkAuth());
   }, []);
 
-  // Listen for storage events, with debounce to prevent recursive updates
+  // Listen for storage events
   useEffect(() => {
     const handleStorageChange = () => {
       const currentAuthState = checkAuth();
@@ -87,14 +86,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/explore"
-          element={
-            <ProtectedRoute>
-              <Explore />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/profile"
           element={

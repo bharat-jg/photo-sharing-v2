@@ -2,13 +2,13 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Home, Compass, PlusSquare, Bell, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+// This component renders a sidebar with navigation links and icons for different sections of the application.
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
     { icon: <Home size={24} />, label: 'Home', path: '/feed' },
-    // { icon: <Compass size={24} />, label: 'Explore', path: '/explore' },
     { icon: <PlusSquare size={24} />, label: 'Upload', path: '/upload' },
     { icon: <User size={24} />, label: 'Profile', path: '/profile' },
   ];

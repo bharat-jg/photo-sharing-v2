@@ -70,7 +70,7 @@ const formatRelativeTime = (dateString) => {
   }
 };
 
-// Comment component
+// Comment component for displaying individual comments
 const Comment = ({ comment, comments, setComments, postUserId }) => {
   const [isLiked, setIsLiked] = useState(false);
   const currentUserId = getCurrentUserId();
@@ -306,8 +306,8 @@ const ShareModal = ({ isOpen, onClose, post }) => {
 };
 // Main Post Page component
 const PhotoDetail = () => {
-  const [isOwner, setIsOwner] = useState(false); // Ensured this is top-level hook
-  const { id } = useParams(); // Get photo ID from URL params
+  const [isOwner, setIsOwner] = useState(false); 
+  const { id } = useParams(); 
   const navigate = useNavigate();
 
   const [post, setPost] = useState(null);
@@ -317,7 +317,6 @@ const PhotoDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  // initial state
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
@@ -334,7 +333,7 @@ const PhotoDetail = () => {
   useEffect(() => {
     if (post) {
       setIsLiked(post.liked);
-      setIsSaved(post.saved_by_user); // new line for bookmark
+      setIsSaved(post.saved_by_user); 
       setLikeCount(post.likes_count);
     }
   }, [post]);
@@ -342,13 +341,12 @@ const PhotoDetail = () => {
   // Fetched photos of the user who posted the current photo
   useEffect(() => {
     const fetchUserPhotos = async () => {
-      if (!post || !post.user || !post.user.id) return; // ✅ Wait for valid post
+      if (!post || !post.user || !post.user.id) return; 
 
       try {
         const postUserId = post.user.id;
         const res = await axios.get(
           `http://localhost:8000/api/photos/?user_id=${postUserId}`,
-          // `http://localhost:8000/api/photos/`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('access_token')}`,

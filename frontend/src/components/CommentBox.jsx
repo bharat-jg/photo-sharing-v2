@@ -3,6 +3,7 @@ import axios from '../api/axios';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 
+// This component allows users to add comments to a photo. 
 const CommentBox = ({ photoId, onNewComment }) => {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);

@@ -28,7 +28,7 @@ const Login = () => {
         localStorage.setItem('access_token', data.access);
         // Trigger storage event for App.js to detect
         window.dispatchEvent(new Event('storage'));
-        navigate('/feed'); // Redirect directly to feed page after successful login
+        navigate('/feed'); 
       } else {
         setError('Invalid credentials');
       }

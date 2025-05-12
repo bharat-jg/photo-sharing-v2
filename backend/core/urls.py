@@ -38,9 +38,7 @@ urlpatterns = [
     path('profile/update-photo/', update_profile_photo, name='update_profile_photo'),
     path('profile/delete-photo/', delete_profile_photo, name='delete_profile_photo'),
 
-
     # bookmarks
     path("photos/<int:photo_id>/save-toggle/", save_toggle, name="save-toggle"),
     path("photos/saved/", saved_photos, name="saved-photos"),
-
 ]

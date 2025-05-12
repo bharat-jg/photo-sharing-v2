@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from .models import Photo, Comment, Like, Profile
 from rest_framework.validators import UniqueValidator
 
-
+# Profile Serializer for handiling profile data
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
@@ -27,12 +27,12 @@ class UserSerializer(serializers.ModelSerializer):
             username=validated_data["username"],
             email=validated_data["email"]
         )
-        user.set_password(validated_data["password"])  # HASH PASSWORD
+        user.set_password(validated_data["password"])  
         
         user.save()
         return user
 
-
+# Comment Serializer for handling comments on photos
 class CommentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)  
 
@@ -40,7 +40,7 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ["id", "user", "photo", "text", "created_at"]
 
-
+# Like Serializer for handling likes on photos
 class LikeSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 
@@ -48,13 +48,13 @@ class LikeSerializer(serializers.ModelSerializer):
         model = Like
         fields = ["id", "user", "photo", "created_at"]
 
-
+# Photo Serializer for handling photo data
 class PhotoSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True) 
     comments = CommentSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
     likes = serializers.SerializerMethodField()
-    bookmarks = serializers.SerializerMethodField()  # ✅ NEW
+    bookmarks = serializers.SerializerMethodField() 
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
 
@@ -69,7 +69,7 @@ class PhotoSerializer(serializers.ModelSerializer):
             "comments",
             "likes_count",
             "likes",
-            "bookmarks",  # ✅ NEW
+            "bookmarks",  
             "first_name",
             "last_name",
         ]
@@ -84,13 +84,10 @@ class PhotoSerializer(serializers.ModelSerializer):
         return obj.bookmarks.values_list('user_id', flat=True)
 
 
-
-# User Profile Information Serializer 
-# This serializer is used to show the user's profile information, including the number of posts they have made.
+# User Profile Serializer for handling user profile information
 class UserProfileSerializer(serializers.ModelSerializer):
     posts_count = serializers.SerializerMethodField()
 
-    # Writable fields
     bio = serializers.CharField(source='profile.bio', allow_blank=True, required=False)
     profile_photo = serializers.ImageField(source='profile.profile_photo', required=False)
 

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
+// This component handles the password reset functionality for users who have forgotten their password.
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState(null);

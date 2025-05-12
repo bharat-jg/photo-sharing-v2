@@ -5,7 +5,7 @@ export const getCurrentUser = () => {
   const token = localStorage.getItem('access_token');
   if (!token) return null;
   try {
-    return jwtDecode(token); // returns the full user object: { user_id, username, exp, ... }
+    return jwtDecode(token); 
   } catch (e) {
     console.error('Token decode error:', e);
     return null;

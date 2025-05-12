@@ -49,7 +49,7 @@ export default function ProfilePage() {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setSearchParams({ tab }); // update the URL
+    setSearchParams({ tab }); 
   };
 
   useEffect(() => {
@@ -296,7 +296,7 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    // Clear all local state first
+    
     setUserData(null);
     setOriginalUserData(null);
     setPhotos([]);
@@ -307,7 +307,6 @@ export default function ProfilePage() {
     localStorage.removeItem('access_token');
     window.dispatchEvent(new Event('storage'));
 
-    // Navigate after cleanup
     navigate('/login', { replace: true });
   };
 
@@ -357,7 +356,6 @@ export default function ProfilePage() {
                  transition-all duration-200 border border-red-400/30"
                     >
                       <Trash2 size={15} />
-                      {/* Remove photo */}
                     </motion.button>
                   )}
                   {showDeleteConfirmation && (
@@ -382,8 +380,8 @@ export default function ProfilePage() {
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               onClick={(e) => {
-                                e.preventDefault(); // Add this
-                                e.stopPropagation(); // Add this
+                                e.preventDefault();
+                                e.stopPropagation(); 
                                 setShowDeleteConfirmation(false);
                               }}
                               className="px-5 py-2 bg-gray-100 text-gray-700 rounded-full font-medium 
@@ -397,8 +395,8 @@ export default function ProfilePage() {
                               onClick={(e) => {
                                 handleDeletePhoto();
                                 setShowDeleteConfirmation(false);
-                                e.preventDefault(); // Add this
-                                e.stopPropagation(); // Add this
+                                e.preventDefault(); 
+                                e.stopPropagation(); 
                               }}
                               className="px-5 py-2 bg-red-500 text-white rounded-full font-medium 
                      hover:bg-red-600 shadow-md hover:shadow-lg 

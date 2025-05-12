@@ -19,7 +19,6 @@ const Register = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Update the handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -29,7 +28,6 @@ const Register = () => {
       await axios.post('/register/', form);
       navigate('/login');
     } catch (err) {
-      // Handle specific error cases
       if (err.response) {
         switch (err.response.status) {
           case 400:
@@ -67,7 +65,6 @@ const Register = () => {
             setError('Something went wrong. Please try again.');
         }
       } else if (err.request) {
-        // Handle network errors
         setError('Network error. Please check your connection and try again.');
       } else {
         setError('An unexpected error occurred. Please try again.');
@@ -78,7 +75,7 @@ const Register = () => {
   };
 
   const handleContinue = () => {
-    setError(''); // Clear previous errors
+    setError(''); 
 
     if (step === 0) {
       // Validate username
@@ -206,7 +203,7 @@ const Register = () => {
           <div className="p-8">
             <form
               onSubmit={(e) => {
-                e.preventDefault(); // Prevent form submission on enter key
+                e.preventDefault(); 
                 if (step === 2) {
                   handleSubmit(e);
                 }

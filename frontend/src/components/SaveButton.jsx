@@ -2,6 +2,7 @@ import { Bookmark } from 'lucide-react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 
+// This component is a button that allows users to save or unsave a photo. 
 const SaveButton = ({ photoId, isSaved, onSaveChange }) => {
   const token = localStorage.getItem('access_token');
 
